@@ -52,6 +52,15 @@ async function setup() {
         observacao       TEXT,
         criado_em        TIMESTAMP DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id         SERIAL PRIMARY KEY,
+        email      VARCHAR(255) NOT NULL,
+        token      VARCHAR(6)   NOT NULL,
+        expira_em  TIMESTAMP    NOT NULL,
+        usado      BOOLEAN      DEFAULT FALSE,
+        criado_em  TIMESTAMP    DEFAULT NOW()
+      );
     `);
     console.log('Tabelas criadas com sucesso.');
   } finally {

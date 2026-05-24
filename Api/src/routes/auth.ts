@@ -1,7 +1,21 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import { pool } from '../db';
+
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
 
 const router = Router();
 
@@ -78,6 +92,119 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
       usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, perfil: usuario.perfil },
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  const { email } = req.body as { email: string };
+
+  if (!email) {
+    res.status(400).json({ error: 'E-mail é obrigatório.' });
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      'SELECT id, nome FROM usuarios WHERE email = $1',
+      [email],
+    );
+
+    // Responde sempre com sucesso para não revelar quais e-mails estão cadastrados
+    if (result.rows.length === 0) {
+      res.json({ message: 'Se o e-mail estiver cadastrado, você receberá as instruções.' });
+      return;
+    }
+
+    const usuario = result.rows[0];
+
+    // Gera token numérico de 6 dígitos
+    const token = crypto.randomInt(100000, 999999).toString();
+    const expiraEm = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    // Invalida tokens anteriores do mesmo e-mail
+    await pool.query(
+      'UPDATE password_reset_tokens SET usado = TRUE WHERE email = $1 AND usado = FALSE',
+      [email],
+    );
+
+    await pool.query(
+      'INSERT INTO password_reset_tokens (email, token, expira_em) VALUES ($1, $2, $3)',
+      [email, token, expiraEm],
+    );
+
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || 'PetCare <noreply@petcare.com>',
+      to: email,
+      subject: 'Redefinição de senha — PetCare',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+          <h2 style="color:#008080">PetCare 🐾</h2>
+          <p>Olá, <strong>${usuario.nome}</strong>!</p>
+          <p>Recebemos uma solicitação de redefinição de senha para sua conta.</p>
+          <p>Use o código abaixo no aplicativo. Ele é válido por <strong>15 minutos</strong>:</p>
+          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;text-align:center;
+                      background:#f0f0f0;padding:16px 24px;border-radius:8px;margin:24px 0">
+            ${token}
+          </div>
+          <p style="color:#888;font-size:12px">
+            Se você não solicitou a redefinição, ignore este e-mail.
+          </p>
+        </div>
+      `,
+    });
+
+    res.json({ message: 'Se o e-mail estiver cadastrado, você receberá as instruções.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req: Request, res: Response) => {
+  const { email, token, novaSenha } = req.body as {
+    email: string;
+    token: string;
+    novaSenha: string;
+  };
+
+  if (!email || !token || !novaSenha) {
+    res.status(400).json({ error: 'email, token e novaSenha são obrigatórios.' });
+    return;
+  }
+
+  if (novaSenha.length < 6) {
+    res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres.' });
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id FROM password_reset_tokens
+       WHERE email = $1 AND token = $2 AND usado = FALSE AND expira_em > NOW()`,
+      [email, token],
+    );
+
+    if (result.rows.length === 0) {
+      res.status(400).json({ error: 'Código inválido ou expirado.' });
+      return;
+    }
+
+    const hash = await bcrypt.hash(novaSenha, 10);
+    await pool.query('UPDATE usuarios SET senha = $1 WHERE email = $2', [hash, email]);
+
+    // Marca o token como usado
+    await pool.query(
+      'UPDATE password_reset_tokens SET usado = TRUE WHERE id = $1',
+      [result.rows[0].id],
+    );
+
+    res.json({ message: 'Senha redefinida com sucesso.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro interno.' });

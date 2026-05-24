@@ -108,6 +108,34 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Text('Entrar'),
                   ),
                 ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () =>
+                        Navigator.of(context).pushNamed('/forgot-password'),
+                    child: const Text(
+                      'Esqueci minha senha',
+                      style: TextStyle(color: Colors.teal),
+                    ),
+                  ),
+                ),
+                const Divider(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Ainda não tem conta?'),
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed('/register'),
+                      child: const Text(
+                        'Cadastrar-se',
+                        style: TextStyle(
+                            color: Colors.teal, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

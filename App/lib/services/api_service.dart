@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,8 +9,9 @@ import '../models/servico.dart';
 import '../models/agendamento.dart';
 
 class ApiService {
-  // Change to your machine's IP when running on a physical device
-  static const String _base = 'http://10.0.2.2:3000/api';
+  // kIsWeb → browser uses localhost; Android emulator uses 10.0.2.2
+  static String get _base =>
+      kIsWeb ? 'http://localhost:3000/api' : 'http://10.0.2.2:3000/api';
 
   // ─── Token helpers ─────────────────────────────────────────────────────────
 
@@ -75,6 +77,26 @@ class ApiService {
         'senha': senha,
         'perfil': perfil,
       }),
+    );
+    _checkStatus(res);
+  }
+
+  static Future<void> forgotPassword(String email) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+    _checkStatus(res);
+  }
+
+  static Future<void> resetPassword(
+      String email, String token, String novaSenha) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body:
+          jsonEncode({'email': email, 'token': token, 'novaSenha': novaSenha}),
     );
     _checkStatus(res);
   }
