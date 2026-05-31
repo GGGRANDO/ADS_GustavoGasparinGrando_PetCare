@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/clientes/clientes_screen.dart';
 import 'screens/profissionais/profissionais_screen.dart';
 import 'screens/servicos/servicos_screen.dart';
+import 'screens/profissionais/profissionais_catalogo_screen.dart';
 import 'screens/agendamentos/agendamentos_screen.dart';
 
 void main() {
@@ -42,6 +43,7 @@ class PetCareApp extends StatelessWidget {
         '/profissionais': (_) => const ProfissionaisScreen(),
         '/servicos': (_) => const ServicosScreen(),
         '/agendamentos': (_) => const AgendamentosScreen(),
+        '/profissionais-catalogo': (_) => const ProfissionaisCatalogoScreen(),
       },
       // Redirect to /home if already logged in
       onGenerateRoute: (settings) {

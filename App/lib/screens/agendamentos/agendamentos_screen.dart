@@ -15,6 +15,11 @@ class _AgendamentosScreenState extends State<AgendamentosScreen> {
   bool _loading = true;
   String? _filtroStatus;
 
+  // argumentos injetados via Navigator (home_screen)
+  int? _idCliente;
+  int? _idProfissional;
+  bool _somenteLeitura = false;
+
   static const _statusColors = {
     'agendado': Colors.blue,
     'confirmado': Colors.green,
@@ -23,15 +28,30 @@ class _AgendamentosScreenState extends State<AgendamentosScreen> {
   };
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      _idCliente = args['idCliente'] as int?;
+      _idProfissional = args['idProfissional'] as int?;
+      _somenteLeitura = _idCliente != null || _idProfissional != null;
+    }
+    if (_lista.isEmpty) _load();
+  }
+
+  @override
   void initState() {
     super.initState();
-    _load();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await ApiService.getAgendamentos(status: _filtroStatus);
+      final list = await ApiService.getAgendamentos(
+        status: _filtroStatus,
+        idCliente: _idCliente,
+        idProfissional: _idProfissional,
+      );
       setState(() => _lista = list);
     } catch (e) {
       if (mounted) {
@@ -162,60 +182,72 @@ class _AgendamentosScreenState extends State<AgendamentosScreen> {
                               ],
                             ),
                             isThreeLine: true,
-                            trailing: PopupMenuButton<String>(
-                              icon: Chip(
-                                label: Text(a.status,
-                                    style: const TextStyle(fontSize: 11)),
-                                backgroundColor: color.withOpacity(0.15),
-                              ),
-                              onSelected: (v) {
-                                if (v == '_edit') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) => AgendamentoFormScreen(
-                                            agendamento: a)),
-                                  ).then((_) => _load());
-                                } else if (v == '_delete') {
-                                  _delete(a);
-                                } else {
-                                  _updateStatus(a, v);
-                                }
-                              },
-                              itemBuilder: (_) => [
-                                const PopupMenuItem(
-                                    value: 'confirmado',
-                                    child: Text('Confirmar')),
-                                const PopupMenuItem(
-                                    value: 'concluido',
-                                    child: Text('Concluir')),
-                                const PopupMenuItem(
-                                    value: 'cancelado',
-                                    child: Text('Cancelar')),
-                                const PopupMenuDivider(),
-                                const PopupMenuItem(
-                                    value: '_edit', child: Text('Editar')),
-                                const PopupMenuItem(
-                                    value: '_delete', child: Text('Excluir')),
-                              ],
-                            ),
+                            trailing: _somenteLeitura
+                                ? Chip(
+                                    label: Text(a.status,
+                                        style: const TextStyle(fontSize: 11)),
+                                    backgroundColor: color.withOpacity(0.15),
+                                  )
+                                : PopupMenuButton<String>(
+                                    icon: Chip(
+                                      label: Text(a.status,
+                                          style: const TextStyle(fontSize: 11)),
+                                      backgroundColor: color.withOpacity(0.15),
+                                    ),
+                                    onSelected: (v) {
+                                      if (v == '_edit') {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  AgendamentoFormScreen(
+                                                      agendamento: a)),
+                                        ).then((_) => _load());
+                                      } else if (v == '_delete') {
+                                        _delete(a);
+                                      } else {
+                                        _updateStatus(a, v);
+                                      }
+                                    },
+                                    itemBuilder: (_) => [
+                                      const PopupMenuItem(
+                                          value: 'confirmado',
+                                          child: Text('Confirmar')),
+                                      const PopupMenuItem(
+                                          value: 'concluido',
+                                          child: Text('Concluir')),
+                                      const PopupMenuItem(
+                                          value: 'cancelado',
+                                          child: Text('Cancelar')),
+                                      const PopupMenuDivider(),
+                                      const PopupMenuItem(
+                                          value: '_edit',
+                                          child: Text('Editar')),
+                                      const PopupMenuItem(
+                                          value: '_delete',
+                                          child: Text('Excluir')),
+                                    ],
+                                  ),
                           ),
                         );
                       },
                     ),
             ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AgendamentoFormScreen()),
-          );
-          _load();
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _somenteLeitura
+          ? null
+          : FloatingActionButton(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const AgendamentoFormScreen()),
+                );
+                _load();
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }

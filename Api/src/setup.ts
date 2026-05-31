@@ -61,6 +61,12 @@ async function setup() {
         usado      BOOLEAN      DEFAULT FALSE,
         criado_em  TIMESTAMP    DEFAULT NOW()
       );
+
+      ALTER TABLE clientes
+        ADD COLUMN IF NOT EXISTS id_usuario INTEGER REFERENCES usuarios(id);
+
+      ALTER TABLE profissionais
+        ADD COLUMN IF NOT EXISTS id_usuario INTEGER REFERENCES usuarios(id);
     `);
     console.log('Tabelas criadas com sucesso.');
   } finally {

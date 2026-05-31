@@ -7,7 +7,11 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usuario = context.watch<AuthProvider>().usuario;
+    final auth = context.watch<AuthProvider>();
+    final usuario = auth.usuario;
+    final perfil = auth.perfil;
+
+    final cards = _cardsParaPerfil(perfil, auth.idVinculado);
 
     return Scaffold(
       appBar: AppBar(
@@ -44,37 +48,72 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              children: const [
-                _MenuCard(
-                  icon: Icons.people,
-                  label: 'Clientes',
-                  route: '/clientes',
-                  color: Colors.blue,
-                ),
-                _MenuCard(
-                  icon: Icons.badge,
-                  label: 'Profissionais',
-                  route: '/profissionais',
-                  color: Colors.orange,
-                ),
-                _MenuCard(
-                  icon: Icons.miscellaneous_services,
-                  label: 'Serviços',
-                  route: '/servicos',
-                  color: Colors.purple,
-                ),
-                _MenuCard(
-                  icon: Icons.calendar_month,
-                  label: 'Agendamentos',
-                  route: '/agendamentos',
-                  color: Colors.teal,
-                ),
-              ],
+              children: cards,
             ),
           ),
         ],
       ),
     );
+  }
+
+  List<Widget> _cardsParaPerfil(String perfil, int? idVinculado) {
+    if (perfil == 'cliente') {
+      return [
+        _MenuCard(
+          icon: Icons.badge,
+          label: 'Profissionais',
+          route: '/profissionais-catalogo',
+          color: Colors.orange,
+        ),
+        _MenuCard(
+          icon: Icons.calendar_month,
+          label: 'Meus Agendamentos',
+          route: '/agendamentos',
+          color: Colors.teal,
+          arguments: {'idCliente': idVinculado},
+        ),
+      ];
+    }
+
+    if (perfil == 'profissional') {
+      return [
+        _MenuCard(
+          icon: Icons.calendar_month,
+          label: 'Meus Agendamentos',
+          route: '/agendamentos',
+          color: Colors.teal,
+          arguments: {'idProfissional': idVinculado},
+        ),
+      ];
+    }
+
+    // admin / atendente — todos os módulos
+    return const [
+      _MenuCard(
+        icon: Icons.people,
+        label: 'Clientes',
+        route: '/clientes',
+        color: Colors.blue,
+      ),
+      _MenuCard(
+        icon: Icons.badge,
+        label: 'Profissionais',
+        route: '/profissionais',
+        color: Colors.orange,
+      ),
+      _MenuCard(
+        icon: Icons.miscellaneous_services,
+        label: 'Serviços',
+        route: '/servicos',
+        color: Colors.purple,
+      ),
+      _MenuCard(
+        icon: Icons.calendar_month,
+        label: 'Agendamentos',
+        route: '/agendamentos',
+        color: Colors.teal,
+      ),
+    ];
   }
 }
 
@@ -83,12 +122,14 @@ class _MenuCard extends StatelessWidget {
   final String label;
   final String route;
   final Color color;
+  final Object? arguments;
 
   const _MenuCard({
     required this.icon,
     required this.label,
     required this.route,
     required this.color,
+    this.arguments,
   });
 
   @override
@@ -98,7 +139,8 @@ class _MenuCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.of(context).pushNamed(route),
+        onTap: () =>
+            Navigator.of(context).pushNamed(route, arguments: arguments),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -111,6 +153,7 @@ class _MenuCard extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

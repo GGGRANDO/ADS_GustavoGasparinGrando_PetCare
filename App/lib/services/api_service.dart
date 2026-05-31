@@ -66,8 +66,10 @@ class ApiService {
     String nome,
     String email,
     String senha,
-    String perfil,
-  ) async {
+    String perfil, {
+    String? telefone,
+    String? especialidade,
+  }) async {
     final res = await http.post(
       Uri.parse('$_base/auth/register'),
       headers: {'Content-Type': 'application/json'},
@@ -76,6 +78,8 @@ class ApiService {
         'email': email,
         'senha': senha,
         'perfil': perfil,
+        if (telefone != null) 'telefone': telefone,
+        if (especialidade != null) 'especialidade': especialidade,
       }),
     );
     _checkStatus(res);

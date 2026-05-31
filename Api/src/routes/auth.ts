@@ -19,13 +19,17 @@ function createTransporter() {
 
 const router = Router();
 
+const PERFIS_VALIDOS = ['cliente', 'profissional', 'atendente', 'admin'];
+
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response) => {
-  const { nome, email, senha, perfil } = req.body as {
+  const { nome, email, senha, perfil, telefone, especialidade } = req.body as {
     nome: string;
     email: string;
     senha: string;
     perfil?: string;
+    telefone?: string;
+    especialidade?: string;
   };
 
   if (!nome || !email || !senha) {
@@ -33,16 +37,39 @@ router.post('/register', async (req: Request, res: Response) => {
     return;
   }
 
+  const perfilFinal = perfil && PERFIS_VALIDOS.includes(perfil) ? perfil : 'cliente';
+
+  const dbClient = await pool.connect();
   try {
+    await dbClient.query('BEGIN');
+
     const hash = await bcrypt.hash(senha, 10);
-    const result = await pool.query(
+    const result = await dbClient.query(
       `INSERT INTO usuarios (nome, email, senha, perfil)
        VALUES ($1, $2, $3, $4)
        RETURNING id, nome, email, perfil`,
-      [nome, email, hash, perfil || 'atendente'],
+      [nome, email, hash, perfilFinal],
     );
-    res.status(201).json(result.rows[0]);
+    const usuario = result.rows[0];
+
+    if (perfilFinal === 'cliente') {
+      await dbClient.query(
+        `INSERT INTO clientes (nome, email, telefone, id_usuario)
+         VALUES ($1, $2, $3, $4)`,
+        [nome, email, telefone || null, usuario.id],
+      );
+    } else if (perfilFinal === 'profissional') {
+      await dbClient.query(
+        `INSERT INTO profissionais (nome, telefone, especialidade, id_usuario)
+         VALUES ($1, $2, $3, $4)`,
+        [nome, telefone || null, especialidade || null, usuario.id],
+      );
+    }
+
+    await dbClient.query('COMMIT');
+    res.status(201).json(usuario);
   } catch (err: unknown) {
+    await dbClient.query('ROLLBACK');
     const pg = err as { code?: string };
     if (pg.code === '23505') {
       res.status(409).json({ error: 'E-mail já cadastrado.' });
@@ -50,6 +77,8 @@ router.post('/register', async (req: Request, res: Response) => {
       console.error(err);
       res.status(500).json({ error: 'Erro interno.' });
     }
+  } finally {
+    dbClient.release();
   }
 });
 
@@ -88,9 +117,25 @@ router.post('/login', async (req: Request, res: Response) => {
       { expiresIn: '8h' },
     );
 
+    // Busca id vinculado na tabela clientes ou profissionais
+    let idVinculado: number | null = null;
+    if (usuario.perfil === 'cliente') {
+      const r = await pool.query('SELECT id FROM clientes WHERE id_usuario = $1', [usuario.id]);
+      if (r.rows.length > 0) idVinculado = r.rows[0].id;
+    } else if (usuario.perfil === 'profissional') {
+      const r = await pool.query('SELECT id FROM profissionais WHERE id_usuario = $1', [usuario.id]);
+      if (r.rows.length > 0) idVinculado = r.rows[0].id;
+    }
+
     res.json({
       token,
-      usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, perfil: usuario.perfil },
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        perfil: usuario.perfil,
+        id_vinculado: idVinculado,
+      },
     });
   } catch (err) {
     console.error(err);

@@ -12,6 +12,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _usuario != null;
   bool get loading => _loading;
   String? get error => _error;
+  String get perfil => (_usuario?['perfil'] as String?) ?? 'atendente';
+  int? get idVinculado => _usuario?['id_vinculado'] as int?;
 
   AuthProvider() {
     _loadFromPrefs();
