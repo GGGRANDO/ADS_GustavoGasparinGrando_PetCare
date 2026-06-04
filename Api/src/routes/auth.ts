@@ -5,8 +5,25 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { pool } from '../db';
 
-function createTransporter() {
-  return nodemailer.createTransport({
+async function createTransporter(): Promise<{ transport: nodemailer.Transporter; isTest: boolean }> {
+  const smtpConfigured =
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS;
+
+  if (!smtpConfigured) {
+    // Sem credenciais reais: usa Ethereal (caixa de entrada de teste)
+    const testAccount = await nodemailer.createTestAccount();
+    const transport = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: { user: testAccount.user, pass: testAccount.pass },
+    });
+    return { transport, isTest: true };
+  }
+
+  const transport = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
     secure: false,
@@ -15,6 +32,7 @@ function createTransporter() {
       pass: process.env.SMTP_PASS,
     },
   });
+  return { transport, isTest: false };
 }
 
 const router = Router();
@@ -181,27 +199,39 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       [email, token, expiraEm],
     );
 
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'PetCare <noreply@petcare.com>',
-      to: email,
-      subject: 'Redefinição de senha — PetCare',
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
-          <h2 style="color:#008080">PetCare 🐾</h2>
-          <p>Olá, <strong>${usuario.nome}</strong>!</p>
-          <p>Recebemos uma solicitação de redefinição de senha para sua conta.</p>
-          <p>Use o código abaixo no aplicativo. Ele é válido por <strong>15 minutos</strong>:</p>
-          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;text-align:center;
-                      background:#f0f0f0;padding:16px 24px;border-radius:8px;margin:24px 0">
-            ${token}
+    try {
+      const { transport, isTest } = await createTransporter();
+      const info = await transport.sendMail({
+        from: process.env.SMTP_FROM || 'PetCare <noreply@petcare.com>',
+        to: email,
+        subject: 'Redefinição de senha — PetCare',
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+            <h2 style="color:#008080">PetCare 🐾</h2>
+            <p>Olá, <strong>${usuario.nome}</strong>!</p>
+            <p>Recebemos uma solicitação de redefinição de senha para sua conta.</p>
+            <p>Use o código abaixo no aplicativo. Ele é válido por <strong>15 minutos</strong>:</p>
+            <div style="font-size:36px;font-weight:bold;letter-spacing:8px;text-align:center;
+                        background:#f0f0f0;padding:16px 24px;border-radius:8px;margin:24px 0">
+              ${token}
+            </div>
+            <p style="color:#888;font-size:12px">
+              Se você não solicitou a redefinição, ignore este e-mail.
+            </p>
           </div>
-          <p style="color:#888;font-size:12px">
-            Se você não solicitou a redefinição, ignore este e-mail.
-          </p>
-        </div>
-      `,
-    });
+        `,
+      });
+
+      if (isTest) {
+        // Modo desenvolvimento: exibe link do Ethereal e o token no console
+        console.log(`[DEV] Preview do e-mail: ${nodemailer.getTestMessageUrl(info)}`);
+        console.log(`[DEV] Token para ${email}: ${token}`);
+      }
+    } catch (mailErr) {
+      // Falha no envio não deve expor erro ao cliente nem bloquear o fluxo;
+      // o token já foi salvo e pode ser reusado.
+      console.error('[SMTP] Falha ao enviar e-mail de redefinição:', mailErr);
+    }
 
     res.json({ message: 'Se o e-mail estiver cadastrado, você receberá as instruções.' });
   } catch (err) {
