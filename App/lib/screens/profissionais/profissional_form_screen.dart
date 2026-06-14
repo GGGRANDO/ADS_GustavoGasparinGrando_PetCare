@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/profissional.dart';
 import '../../services/api_service.dart';
+import 'horarios_profissional_screen.dart';
 
 class ProfissionalFormScreen extends StatefulWidget {
   final Profissional? profissional;
@@ -143,6 +144,30 @@ class _ProfissionalFormScreenState extends State<ProfissionalFormScreen> {
                       : Text(isEdit ? 'Salvar' : 'Cadastrar'),
                 ),
               ),
+              if (isEdit) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HorariosProfissionalScreen(
+                            profissional: widget.profissional!),
+                      ),
+                    ),
+                    icon: const Icon(Icons.schedule, color: Colors.orange),
+                    label: const Text(
+                      'Gerenciar Horários de Atendimento',
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.orange),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

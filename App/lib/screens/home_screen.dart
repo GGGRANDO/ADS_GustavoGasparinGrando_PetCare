@@ -60,6 +60,12 @@ class HomeScreen extends StatelessWidget {
     if (perfil == 'cliente') {
       return [
         _MenuCard(
+          icon: Icons.spa,
+          label: 'Serviços',
+          route: '/servicos-catalogo',
+          color: Colors.purple,
+        ),
+        _MenuCard(
           icon: Icons.badge,
           label: 'Profissionais',
           route: '/profissionais-catalogo',
@@ -78,11 +84,10 @@ class HomeScreen extends StatelessWidget {
     if (perfil == 'profissional') {
       return [
         _MenuCard(
-          icon: Icons.calendar_month,
-          label: 'Meus Agendamentos',
-          route: '/agendamentos',
-          color: Colors.teal,
-          arguments: {'idProfissional': idVinculado},
+          icon: Icons.dashboard_customize,
+          label: 'Meu Painel',
+          route: '/prestador-dashboard',
+          color: Colors.orange,
         ),
       ];
     }

@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>DVP – PetCare</title>
+<style>
+/* === Base (Arial 10pt, espaçamento Word padrão) === */
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  color: #000;
+  background: #fff;
+}
+
+/* === Folha A4 === */
+.page {
+  width: 210mm;
+  margin: 0 auto;
+  padding: 20mm 20mm 20mm 20mm;
+  background: #fff;
+}
+
+@media print {
+  body { margin: 0; background: #fff; }
+  .page {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    box-shadow: none;
+  }
+  .pb { page-break-before: always; }
+  .capa { height: auto; min-height: 0; }
+}
+.pb { page-break-before: always; }
+
+@page { size: A4; margin: 20mm; }
+
+/* === Capa === */
+.capa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 220mm;
+  justify-content: space-between;
+  padding: 20mm 0;
+  overflow: hidden;
+}
+.capa .inst  { font-size:10pt; width:100%; text-align:left; }
+.capa .titulo{ font-size:20pt; font-weight:normal; text-align:right; width:100%; }
+.capa .proj  { font-size:24pt; font-weight:bold; margin-top:8mm; text-align:center; width:100%; }
+.capa .autor { font-size:10pt; margin-top:auto; text-align:center; width:100%; }
+.capa .ano   { font-size:10pt; text-align:center; width:100%; }
+
+/* === Título Histórico de Alterações === */
+.titulo-historico {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #9D3511;
+  margin: 8pt 0 4pt 0;
+}
+
+/* === Título Sumário === */
+.titulo-sumario {
+  font-size: 16pt;
+  font-weight: bold;
+  color: #4E4A4A;
+  border-bottom: 1pt solid #D34817;
+  padding-bottom: 4pt;
+  margin: 10pt 0 15pt 0;
+}
+
+/* === Títulos de seção === */
+/* Nível 0 – REQUISITOS, GESTÃO DE PROJETOS */
+.sec1 {
+  font-size: 12pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #9D3511;
+  margin: 10pt 0 4pt 0;
+}
+
+/* Nível 1 – 1.1. com bottom border */
+.h1n {
+  font-size: 11pt;
+  font-weight: bold;
+  color: #9D3511;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2pt;
+  margin: 8pt 0 4pt 0;
+}
+/* Nível 2 – 1.1.1. */
+.h2n {
+  font-size: 10pt;
+  font-weight: normal;
+  color: #9D3511;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2pt;
+  margin: 6pt 0 3pt 0;
+}
+/* Nível 3 – 1.3.1. */
+.h3n {
+  font-size: 10pt;
+  font-weight: normal;
+  color: #9D3511;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2pt;
+  margin: 6pt 0 3pt 0;
+}
+/* Nível 4 – RF01, UC01 (italic) */
+.h4n {
+  font-size: 10pt;
+  font-weight: normal;
+  font-style: italic;
+  color: #9D3511;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2pt;
+  margin: 6pt 0 0 0;
+}
+
+/* === Parágrafo === */
+p {
+  margin-bottom: 4pt;
+  text-align: justify;
+}
+
+/* === Tabelas === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4pt 0 8pt 0;
+  font-size: 8pt;
+}
+th {
+  background: #FAC090;
+  color: #000;
+  border: 1px solid #000;
+  padding: 4pt 6pt;
+  text-align: center;
+  font-weight: bold;
+}
+td {
+  border: 1px solid #000;
+  padding: 3pt 6pt;
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: #FDE9D9; }
+
+/* Tabela Histórico: sem fill no cabeçalho */
+.hist-table th {
+  background: #fff;
+  font-style: italic;
+  text-align: center;
+}
+
+/* === Bloco de RF === */
+.rf-block {
+  margin: 5pt 0 8pt 0;
+  page-break-inside: avoid;
+}
+.rf-block .rf-title {
+  color: #9D3511;
+  font-weight: bold;
+  font-style: italic;
+  font-size: 10pt;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2pt;
+  margin-bottom: 4pt;
+}
+.rf-block .rf-body {
+  border: 1px solid #000;
+  padding: 6pt 8pt;
+}
+.rf-block .rf-row {
+  display: flex;
+  gap: 6pt;
+  flex-wrap: wrap;
+  margin-bottom: 5pt;
+  align-items: baseline;
+  border-bottom: 1px solid #FBD5B5;
+  padding-bottom: 4pt;
+}
+.rf-block .rf-label {
+  font-weight: bold;
+  white-space: nowrap;
+}
+.rf-block .cb-group {
+  display: flex;
+  gap: 10pt;
+  flex-wrap: wrap;
+}
+/* Checkbox estilo Word */
+.cb {
+  display: inline-flex;
+  align-items: center;
+  gap: 3pt;
+  font-size: 10pt;
+}
+.cb .box {
+  width: 11pt;
+  height: 11pt;
+  border: 1px solid #000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9pt;
+  line-height: 1;
+  background: #fff;
+}
+.cb .box.checked { background: #9D3511; color: #fff; font-weight: bold; }
+.rf-block .rf-dep, .rf-block .rf-prob {
+  margin-bottom: 4pt;
+}
+.rf-block ul {
+  margin: 3pt 0 0 16pt;
+}
+.rf-block li { margin-bottom: 2pt; font-size: 10pt; }
+
+/* === Histórias de Usuário === */
+.uc-block {
+  margin: 5pt 0 8pt 0;
+  page-break-inside: avoid;
+}
+.uc-title {
+  font-size: 12pt;
+  font-weight: normal;
+  font-style: italic;
+  color: #9D3511;
+  border-bottom: 1px solid #000;
+  margin-bottom: 3pt;
+  padding-bottom: 2pt;
+}
+.uc-objetivo {
+  margin-bottom: 8pt;
+}
+.hu-header {
+  background: #FABF8F;
+  color: #000;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 4pt 8pt;
+  margin-bottom: 2pt;
+  font-size: 8pt;
+  border: 1px solid #000;
+}
+.hu-item {
+  border: 1px solid #000;
+  margin-bottom: 8pt;
+  page-break-inside: avoid;
+}
+.hu-row {
+  display: flex;
+  border-bottom: 1px solid #FBD5B5;
+  align-items: stretch;
+}
+.hu-row:last-child { border-bottom: none; }
+.hu-row-label {
+  font-weight: bold;
+  font-size: 8pt;
+  background: #FDE9D9;
+  padding: 3pt 6pt;
+  min-width: 120pt;
+  max-width: 120pt;
+  border-right: 1px solid #000;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+}
+.hu-row ul { margin: 2pt 0 0 16pt; padding: 3pt 6pt; }
+.hu-row li { font-size: 8pt; margin-bottom: 2pt; }
+
+/* === Arquitetura === */
+.arch-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 5pt 0 8pt 0;
+  gap: 0;
+}
+.arch-layer {
+  width: 260pt;
+  border: 1.5px solid #9D3511;
+  text-align: center;
+  padding: 8pt 12pt;
+  font-size: 10pt;
+  background: #FDE9D9;
+}
+.arch-layer strong { display:block; font-size:10pt; margin-bottom:2pt; }
+.arch-arrow {
+  text-align: center;
+  font-size: 12pt;
+  color: #9D3511;
+  line-height: 1.4;
+  font-weight: bold;
+}
+
+/* === Modelo lógico === */
+.db-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6pt;
+  margin: 5pt 0 8pt 0;
+  justify-content: flex-start;
+}
+.db-ent {
+  border: 1px solid #9D3511;
+  min-width: 110pt;
+  font-size: 8pt;
+  page-break-inside: avoid;
+}
+.db-ent-h {
+  background: #9D3511;
+  color: #fff;
+  font-weight: bold;
+  padding: 3pt 6pt;
+  text-align: center;
+  font-size: 8pt;
+}
+.db-ent ul { list-style:none; padding:4pt 6pt; margin:0; }
+.db-ent li { padding: 1pt 0; border-bottom:1px solid #FBD5B5; }
+.db-ent li:last-child { border-bottom: none; }
+.pk { font-weight:bold; color:#69230B; }
+.fk { font-style:italic; color:#9D3511; }
+
+/* === Sumário === */
+.toc { margin: 6pt 0 10pt 0; }
+.toc-line {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 5pt;
+  font-size: 10pt;
+  color: #0000FF;
+}
+.toc-num {
+  white-space: nowrap;
+  flex: 0 0 44pt;
+  text-decoration: underline;
+}
+.toc-title {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  text-decoration: underline;
+}
+.toc-dots {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  margin: 0 4pt;
+  color: #000;
+  text-decoration: none;
+  position: relative;
+  bottom: 2pt;
+}
+.toc-dots::before {
+  content: "....................................................................................................";
+}
+.toc-pg {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  text-decoration: underline;
+}
+
+/* === Legendas === */
+.fig-caption {
+  text-align: center;
+  font-style: italic;
+  font-size: 8pt;
+  margin: 2pt 0 8pt 0;
+  color: #555;
+}
+
+/* === Rodapé === */
+.rodape {
+  border-top: 1px solid #ccc;
+  margin-top: 12pt;
+  padding-top: 4pt;
+  text-align: center;
+  font-size: 8pt;
+  color: #666;
+}
+
+/* utilitários */
+ul { margin: 3pt 0 4pt 16pt; }
+li { margin-bottom: 2pt; }
+code { font-family: Consolas, monospace; font-size: 9pt; background:#f0f0f0; padding:0 3pt; }
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║  CAPA                               ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div class="page" style="page-break-after:always;">
+<div class="capa">
+  <div class="inst">Universidade de Passo Fundo – UPF</div>
+  <div>
+    <div class="titulo">Documento de Visão do Produto – DVP</div>
+    <div class="proj">Projeto de Aplicativo PetCare</div>
+  </div>
+  <div>
+    <div class="autor">Gustavo Gasparin Grando</div>
+    <div class="ano">2026</div>
+  </div>
+</div>
+</div>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║  HISTÓRICO + SUMÁRIO               ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div class="page pb">
+
+<div class="titulo-historico">Histórico de alterações do documento</div>
+<table class="hist-table">
+  <thead><tr><th>Versão</th><th>Alteração efetuada</th><th>Responsável</th><th>Data</th></tr></thead>
+  <tbody>
+    <tr><td>1.0</td><td>Documento inicial do projeto</td><td>Gustavo</td><td>08/03/2026</td></tr>
+    <tr><td>2.0</td><td>Complementação do DVP com visão do produto, requisitos, diagramas, arquitetura e cronograma</td><td>Gustavo</td><td>05/04/2026</td></tr>
+    <tr><td>3.0</td><td>Criação da estrutura inicial do projeto (API + App) e primeira versão do código</td><td>Gustavo</td><td>05/05/2026</td></tr>
+    <tr><td>4.0</td><td>Evolução com criação das rotas da API e telas principais do aplicativo</td><td>Gustavo</td><td>12/05/2026</td></tr>
+    <tr><td>5.0</td><td>Inclusão de cadastro e recuperação de senha; atualização dos requisitos funcionais</td><td>Gustavo</td><td>24/05/2026</td></tr>
+    <tr><td>6.0</td><td>Ajustes de registro e revisão de regras de negócio e critérios de aceite</td><td>Gustavo</td><td>31/05/2026</td></tr>
+    <tr><td>7.0</td><td>Implementação final de recuperação de senha e consolidação técnica do DVP</td><td>Gustavo</td><td>04/06/2026</td></tr>
+  </tbody>
+</table>
+
+<div class="titulo-sumario">Sumário</div>
+<div class="toc">
+  <div class="toc-line"><span class="toc-num">1.</span><span class="toc-title">REQUISITOS</span><span class="toc-dots"></span><span class="toc-pg">3</span></div>
+  <div class="toc-line"><span class="toc-num">1.1.</span><span class="toc-title">Fundamentação dos Requisitos</span><span class="toc-dots"></span><span class="toc-pg">3</span></div>
+  <div class="toc-line"><span class="toc-num">1.1.1.</span><span class="toc-title">Técnicas Utilizadas para Requisitos</span><span class="toc-dots"></span><span class="toc-pg">3</span></div>
+  <div class="toc-line"><span class="toc-num">1.2.</span><span class="toc-title">Concepção dos Requisitos</span><span class="toc-dots"></span><span class="toc-pg">3</span></div>
+  <div class="toc-line"><span class="toc-num">1.2.1.</span><span class="toc-title">Identificação do Domínio</span><span class="toc-dots"></span><span class="toc-pg">3</span></div>
+  <div class="toc-line"><span class="toc-num">1.2.2.</span><span class="toc-title">Principais Stakeholders</span><span class="toc-dots"></span><span class="toc-pg">3</span></div>
+  <div class="toc-line"><span class="toc-num">1.3.</span><span class="toc-title">Elicitação dos Requisitos</span><span class="toc-dots"></span><span class="toc-pg">4</span></div>
+  <div class="toc-line"><span class="toc-num">1.3.1.</span><span class="toc-title">Requisitos Funcionais (RF)</span><span class="toc-dots"></span><span class="toc-pg">4</span></div>
+  <div class="toc-line"><span class="toc-num">1.3.1.1.</span><span class="toc-title">RF01 – RF08</span><span class="toc-dots"></span><span class="toc-pg">4</span></div>
+  <div class="toc-line"><span class="toc-num">1.3.2.</span><span class="toc-title">Requisitos Não-Funcionais (RNF)</span><span class="toc-dots"></span><span class="toc-pg">7</span></div>
+  <div class="toc-line"><span class="toc-num">1.4.</span><span class="toc-title">Especificação dos Requisitos</span><span class="toc-dots"></span><span class="toc-pg">8</span></div>
+  <div class="toc-line"><span class="toc-num">1.4.1.</span><span class="toc-title">UML – Diagrama de Casos de Uso</span><span class="toc-dots"></span><span class="toc-pg">8</span></div>
+  <div class="toc-line"><span class="toc-num">1.4.2.</span><span class="toc-title">Histórias de Usuário Por Caso de Uso</span><span class="toc-dots"></span><span class="toc-pg">9</span></div>
+  <div class="toc-line"><span class="toc-num">1.5.</span><span class="toc-title">Projeto Técnico</span><span class="toc-dots"></span><span class="toc-pg">13</span></div>
+  <div class="toc-line"><span class="toc-num">1.5.1.</span><span class="toc-title">Arquitetura Utilizada</span><span class="toc-dots"></span><span class="toc-pg">13</span></div>
+  <div class="toc-line"><span class="toc-num">1.5.2.</span><span class="toc-title">Ferramentas e Tecnologias</span><span class="toc-dots"></span><span class="toc-pg">14</span></div>
+  <div class="toc-line"><span class="toc-num">1.5.3.</span><span class="toc-title">Modelo Lógico do Banco de Dados</span><span class="toc-dots"></span><span class="toc-pg">15</span></div>
+  <div class="toc-line" style="margin-top:6pt;"><span class="toc-num">2.</span><span class="toc-title">GESTÃO DE PROJETOS</span><span class="toc-dots"></span><span class="toc-pg">16</span></div>
+  <div class="toc-line"><span class="toc-num">2.1.</span><span class="toc-title">Cronograma de Codificação do Projeto</span><span class="toc-dots"></span><span class="toc-pg">16</span></div>
+</div>
+</div>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║  REQUISITOS                         ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div class="page pb">
+<div class="sec1">1. Requisitos</div>
+
+<!-- 1.1 -->
+<div class="h2n">1.1. Fundamentação dos Requisitos</div>
+
+<div class="h3n">1.1.1. Técnicas Utilizadas para Requisitos</div>
+<p>A definição dos requisitos do PetCare foi baseada nas seguintes técnicas:</p>
+<ul>
+  <li><strong>Análise de domínio:</strong> estudo do contexto de serviços pet para identificar as necessidades reais dos usuários.</li>
+  <li><strong>Entrevistas e observação:</strong> coleta de necessidades dos perfis de administrador, profissional e cliente.</li>
+  <li><strong>EAP (Estrutura Analítica do Projeto):</strong> organização das entregas previstas nas sprints semanais.</li>
+  <li><strong>Priorização MoSCoW:</strong> classificação dos requisitos entre essenciais, importantes e desejáveis para o MVP.</li>
+  <li><strong>Refinamento iterativo:</strong> evolução dos requisitos durante o desenvolvimento, incorporando novas funcionalidades como horários de atendimento por slots e painéis diferenciados por perfil.</li>
+</ul>
+<p>O objetivo foi estruturar um sistema de agendamento e gestão de serviços pet com foco em controle operacional, segurança de acesso e boa experiência de uso.</p>
+
+<!-- 1.2 -->
+<div class="h2n">1.2. Concepção dos Requisitos</div>
+
+<div class="h3n">1.2.1. Identificação do Domínio</div>
+<p>O domínio do sistema está relacionado à intermediação e gestão de serviços de cuidado para animais de estimação. O aplicativo PetCare tem como objetivo conectar tutores de pets a profissionais que oferecem serviços como hospedagem, passeios, banho, tosa, alimentação e acompanhamento dos animais.</p>
+<p>A plataforma permite o cadastro de clientes, profissionais, serviços e agendamentos, oferecendo um fluxo centralizado para controle de atendimentos. A proposta do produto é reduzir falhas manuais de agenda, evitar conflitos de horários, manter o histórico de atendimentos e facilitar a consulta das informações necessárias para tomada de decisão.</p>
+<p>O sistema foi implementado com arquitetura cliente-servidor (Flutter + API REST + PostgreSQL), com autenticação JWT, painéis diferenciados por perfil, configuração de horários de trabalho por dia da semana com slots automáticos de disponibilidade, e catálogo de serviços com valor e duração por profissional.</p>
+
+<div class="h3n">1.2.2. Principais Stakeholders</div>
+<table>
+  <thead>
+    <tr>
+      <td colspan="4" style="background:#FBD5B5;color:#69230B;font-weight:bold;font-size:8pt;border:1px solid #000;padding:4pt 6pt;">STAKEHOLDER</td>
+    </tr>
+    <tr>
+      <td style="background:#FDEADA;color:#69230B;font-weight:bold;font-size:8pt;text-align:center;border:1px solid #000;padding:4pt 6pt;">Stakeholder</td>
+      <td style="background:#FDEADA;color:#69230B;font-weight:bold;font-size:8pt;text-align:center;border:1px solid #000;padding:4pt 6pt;">Nome do Stakeholder</td>
+      <td style="background:#FDEADA;color:#69230B;font-weight:bold;font-size:8pt;text-align:center;border:1px solid #000;padding:4pt 6pt;">Responsabilidade</td>
+      <td style="background:#FDEADA;color:#69230B;font-weight:bold;font-size:8pt;text-align:center;border:1px solid #000;padding:4pt 6pt;">Contato</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Gerente do projeto</td>
+      <td>Gustavo Gasparin Grando</td>
+      <td>Definir escopo, acompanhar desenvolvimento e validar entregas</td>
+      <td>177641@upf.br</td>
+    </tr>
+    <tr>
+      <td>Tutor do pet (Cliente)</td>
+      <td>Usuário final</td>
+      <td>Consultar serviços disponíveis com valores e duração; agendar horários com facilidade e segurança</td>
+      <td>Usuário do sistema</td>
+    </tr>
+    <tr>
+      <td>Profissional cuidador (Prestador)</td>
+      <td>Prestador de serviço</td>
+      <td>Organizar agenda; cadastrar serviços com preços e durações; configurar horários de atendimento e visualizar agendamentos do dia</td>
+      <td>Usuário do sistema</td>
+    </tr>
+    <tr>
+      <td>Administrador / Atendente</td>
+      <td>Responsável operacional</td>
+      <td>Controlar acessos, gerenciar cadastros de clientes, profissionais, serviços e agendamentos</td>
+      <td>Usuário interno</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 1.3 -->
+<div class="h2n">1.3. Elicitação dos Requisitos</div>
+<div class="h3n">1.3.1. Requisitos Funcionais (RF)</div>
+</div>
+
+<!-- ── RF01 ── -->
+<div>
+
+<div class="rf-block">
+  <div class="rf-title">RF01 &nbsp;–&nbsp; Gerenciar Login</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> 1</span>
+        <span class="cb"><span class="box">&nbsp;</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> Nenhuma.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Garantir que apenas usuários autorizados acessem o sistema por meio de autenticação segura, com redirecionamento automático para o painel correspondente ao perfil.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Permitir login por e-mail e senha para usuários previamente cadastrados.</li>
+      <li>Validar credenciais via API REST com autenticação JWT antes de conceder acesso.</li>
+      <li>Redirecionar o usuário para o módulo do seu perfil: administrador → painel geral; profissional → Painel do Prestador; cliente → Painel do Cliente.</li>
+      <li>Disponibilizar recuperação de senha via e-mail com token de 6 dígitos e validade de 30 minutos.</li>
+      <li>Suportar registro de novos usuários com perfil de cliente ou profissional.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rf-block">
+  <div class="rf-title">RF02 &nbsp;–&nbsp; Gerenciar Clientes</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> 1</span>
+        <span class="cb"><span class="box">&nbsp;</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Organizar os dados dos tutores e seus pets para apoiar atendimentos e agendamentos sem perda de informação.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Cadastrar clientes com nome, telefone, e-mail e observações.</li>
+      <li>Registrar automaticamente a data de cadastro.</li>
+      <li>Editar dados cadastrais sempre que necessário.</li>
+      <li>Bloquear exclusão quando existirem agendamentos vinculados, permitindo apenas inativação.</li>
+      <li>Disponibilizar busca rápida e filtragem dos clientes cadastrados.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rf-block">
+  <div class="rf-title">RF03 &nbsp;–&nbsp; Gerenciar Profissionais</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> 1</span>
+        <span class="cb"><span class="box">&nbsp;</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Manter os profissionais organizados para compor corretamente os agendamentos e serviços oferecidos.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Cadastrar profissionais com área de atuação, contato e disponibilidade.</li>
+      <li>Listar profissionais ativos com filtro por especialidade.</li>
+      <li>Editar dados e atualizar disponibilidade quando necessário.</li>
+      <li>Bloquear exclusão quando houver vínculo com agendamentos já registrados.</li>
+      <li>Exibir catálogo de profissionais para clientes com botão de agendamento direto.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div>
+<div class="rf-block">
+  <div class="rf-title">RF04 &nbsp;–&nbsp; Gerenciar Serviços</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> 1</span>
+        <span class="cb"><span class="box">&nbsp;</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01, RF03.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Manter padronizado o cadastro dos serviços disponíveis, vinculados ao profissional responsável, com valor e duração definidos, para evitar erros de atendimento e de cobrança.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Cadastrar serviços (passeio, hospedagem, banho, tosa, acompanhamento etc.) com descrição, valor e observações.</li>
+      <li>Definir a <strong>duração do serviço</strong> (15, 30, 45, 60, 90, 120 ou 180 minutos) para controle de slots de agenda.</li>
+      <li>Vincular cada serviço a um profissional específico.</li>
+      <li>Editar descrição, valor, duração e observações dos serviços cadastrados.</li>
+      <li>Bloquear exclusão de serviços vinculados a agendamentos existentes.</li>
+      <li>Exibir catálogo de serviços para clientes com valor, duração e nome do profissional em cards visuais.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rf-block">
+  <div class="rf-title">RF05 &nbsp;–&nbsp; Gerenciar Agendamentos</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> 1</span>
+        <span class="cb"><span class="box">&nbsp;</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01, RF02, RF03, RF04, RF06.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Estruturar um controle eficiente de agenda, evitando conflitos de horário e mantendo histórico dos atendimentos.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Permitir agendamento informando cliente, profissional, serviço, data, status e observações.</li>
+      <li>Selecionar horário por meio de grade de slots disponíveis gerada automaticamente com base nos horários de trabalho do profissional.</li>
+      <li>Ao selecionar o profissional, exibir apenas os serviços vinculados a ele com preços.</li>
+      <li>Impedir dois agendamentos no mesmo horário para o mesmo profissional (conflito bloqueado na API com HTTP 409).</li>
+      <li>Permitir edição, confirmação e cancelamento com manutenção do histórico.</li>
+      <li>Exibir agenda filtrável por data, cliente, profissional e status.</li>
+      <li>No modo cliente: ocultar campo de cliente (preenchido automaticamente) e campo de status.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rf-block">
+  <div class="rf-title">RF06 &nbsp;–&nbsp; Gerenciar Horários de Atendimento do Profissional</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> 1</span>
+        <span class="cb"><span class="box">&nbsp;</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01, RF03.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Permitir que o profissional configure os dias e horários em que atende, para que o sistema gere automaticamente os slots disponíveis para agendamento.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Cadastrar horário de trabalho por dia da semana (domingo a sábado).</li>
+      <li>Definir hora de início, hora de fim e duração de cada slot (30, 45, 60 ou 90 minutos).</li>
+      <li>Upsert: atualizar o horário do dia caso já exista, sem duplicações.</li>
+      <li>Remover horários de dias específicos quando o profissional não atender naquele dia.</li>
+      <li>Gerar automaticamente a lista de slots ao receber uma data de consulta, excluindo horários já ocupados.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div>
+<div class="rf-block">
+  <div class="rf-title">RF07 &nbsp;–&nbsp; Painel do Prestador de Serviço</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box">&nbsp;</span> 1</span>
+        <span class="cb"><span class="box checked">✓</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01, RF03, RF04, RF05, RF06.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Oferecer ao profissional uma visão centralizada e exclusiva para gerenciar seus serviços, horários e agenda, sem acesso aos módulos administrativos.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Exibir painel personalizado após login com perfil <em>profissional</em>.</li>
+      <li>Mostrar nome, especialidade e contador de agendamentos do dia no cabeçalho.</li>
+      <li>Disponibilizar módulos: Minha Agenda, Meus Serviços, Horários de Atendimento e Meu Perfil.</li>
+      <li>Acesso à gestão de serviços filtrando apenas os serviços do próprio profissional.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="rf-block">
+  <div class="rf-title">RF08 &nbsp;–&nbsp; Painel do Cliente / Catálogo</div>
+  <div class="rf-body">
+    <div class="rf-row">
+      <span class="rf-label">Importância:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box checked">✓</span> essencial</span>
+        <span class="cb"><span class="box">&nbsp;</span> importante</span>
+        <span class="cb"><span class="box">&nbsp;</span> desejável</span>
+      </div>
+    </div>
+    <div class="rf-row">
+      <span class="rf-label">Priorização:</span>
+      <div class="cb-group">
+        <span class="cb"><span class="box">&nbsp;</span> 1</span>
+        <span class="cb"><span class="box checked">✓</span> 2</span>
+        <span class="cb"><span class="box">&nbsp;</span> 3</span>
+        <span class="cb"><span class="box">&nbsp;</span> 4</span>
+        <span class="cb"><span class="box">&nbsp;</span> 5</span>
+      </div>
+    </div>
+    <p class="rf-dep"><span class="rf-label">Dependência com outro(s) requisito(s):</span> RF01, RF02, RF04, RF05.</p>
+    <p class="rf-prob"><span class="rf-label">Problema / Necessidades Identificadas:</span> Oferecer ao cliente uma experiência de autoatendimento para consultar serviços disponíveis, ver valores e durações, escolher profissional e agendar diretamente pelo app.</p>
+    <p><strong>Fluxos Esperados:</strong></p>
+    <ul>
+      <li>Exibir painel personalizado após login com perfil <em>cliente</em>.</li>
+      <li>Mostrar nome do cliente com badges de agendamentos do dia e pendentes.</li>
+      <li>Disponibilizar atalho de Novo Agendamento direto no painel.</li>
+      <li>Acessar Catálogo de Serviços com cards exibindo preço, duração e profissional responsável.</li>
+      <li>Acessar Catálogo de Profissionais com botão "Agendar" por profissional.</li>
+      <li>Acessar histórico de Meus Agendamentos filtrado pelo próprio cliente.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 1.3.2 RNF -->
+<div class="h3n">1.3.2. Requisitos Não-Funcionais (RNF)</div>
+<table>
+  <thead><tr><th>Identificação</th><th>Descrição</th></tr></thead>
+  <tbody>
+    <tr><td>RNF01</td><td>A interface deve ser responsiva e de fácil utilização em Android, iOS e web (Chrome).</td></tr>
+    <tr><td>RNF02</td><td>O sistema deve garantir autenticação segura com JWT e segregação de acessos por perfil (admin, profissional, cliente).</td></tr>
+    <tr><td>RNF03</td><td>Os dados devem ser persistidos de forma consistente, com integridade relacional no banco PostgreSQL (chaves estrangeiras, constraints).</td></tr>
+    <tr><td>RNF04</td><td>O tempo de resposta para consultas simples deve ser adequado ao uso operacional cotidiano (inferior a 2 segundos em rede local).</td></tr>
+    <tr><td>RNF05</td><td>A aplicação deve ser organizada em camadas (API → Routes → DB; App → Screens → Services → Models) para facilitar manutenção e evolução.</td></tr>
+    <tr><td>RNF06</td><td>Senhas devem ser armazenadas com hash seguro (bcrypt) e nunca trafegar em texto plano.</td></tr>
+    <tr><td>RNF07</td><td>A API deve validar e sanitizar todos os parâmetros recebidos antes de executar queries no banco.</td></tr>
+    <tr><td>RNF08</td><td>O token de recuperação de senha deve ter validade limitada e ser marcado como usado após a redefinição.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║  1.4 ESPECIFICAÇÃO                  ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div>
+<div class="h2n" style="margin-top:0;">1.4. Especificação dos Requisitos</div>
+
+<div class="h3n">1.4.1. UML – Diagrama de Casos de Uso</div>
+<p>O diagrama abaixo apresenta todos os casos de uso definidos para a solução, representando os atores e suas interações com o sistema.</p>
+
+<!-- Diagrama UML Casos de Uso – estilo Astah -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 600"
+     style="width:100%;max-width:100%;font-family:Calibri,Arial,sans-serif;display:block;margin:8pt 0 4pt 0;">
+  <defs>
+    <style>
+      .uc-el   { fill:#fff; stroke:#1a1a1a; stroke-width:1.2; }
+      .sys-bnd { fill:#fafafa; stroke:#1a1a1a; stroke-width:1.8; }
+      .assoc   { stroke:#1a1a1a; stroke-width:0.85; fill:none; }
+      .sfig    { stroke:#1a1a1a; stroke-width:1.3; fill:none; }
+      .sfig-h  { stroke:#1a1a1a; stroke-width:1.3; fill:#fff; }
+      .uc-t    { font-size:8.5px; fill:#1a1a1a; text-anchor:middle; dominant-baseline:central; }
+      .act-t   { font-size:8.5px; fill:#1a1a1a; text-anchor:middle; }
+      .sys-t   { font-size:11px; font-weight:bold; fill:#1a1a1a; text-anchor:middle; }
+    </style>
+  </defs>
+
+  <!-- ── Sistema ── -->
+  <rect x="140" y="10" width="572" height="582" rx="3" class="sys-bnd"/>
+  <text x="426" y="34" class="sys-t">Sistema PetCare</text>
+
+  <!-- ── Use Cases ── -->
+  <!-- UC01 Gerenciar Login -->
+  <ellipse cx="426" cy="80" rx="98" ry="20" class="uc-el"/>
+  <text x="426" y="80" class="uc-t">UC01 – Gerenciar Login</text>
+
+  <!-- UC02 Gerenciar Clientes -->
+  <ellipse cx="240" cy="170" rx="85" ry="20" class="uc-el"/>
+  <text x="240" y="170" class="uc-t">UC02 – Gerenciar Clientes</text>
+
+  <!-- UC03 Gerenciar Profissionais -->
+  <ellipse cx="575" cy="170" rx="100" ry="20" class="uc-el"/>
+  <text x="575" y="170" class="uc-t">UC03 – Gerenciar Profissionais</text>
+
+  <!-- UC04 Gerenciar Serviços -->
+  <ellipse cx="240" cy="270" rx="85" ry="20" class="uc-el"/>
+  <text x="240" y="270" class="uc-t">UC04 – Gerenciar Serviços</text>
+
+  <!-- UC05 Gerenciar Agendamentos -->
+  <ellipse cx="575" cy="270" rx="100" ry="20" class="uc-el"/>
+  <text x="575" y="270" class="uc-t">UC05 – Gerenciar Agendamentos</text>
+
+  <!-- UC06 Configurar Horários de Atendimento -->
+  <ellipse cx="408" cy="370" rx="118" ry="20" class="uc-el"/>
+  <text x="408" y="364" class="uc-t">UC06 – Configurar Horários</text>
+  <text x="408" y="377" class="uc-t">de Atendimento</text>
+
+  <!-- UC07 Consultar Catálogo de Serviços -->
+  <ellipse cx="248" cy="480" rx="92" ry="20" class="uc-el"/>
+  <text x="248" y="474" class="uc-t">UC07 – Consultar Catálogo</text>
+  <text x="248" y="487" class="uc-t">de Serviços</text>
+
+  <!-- UC08 Consultar Catálogo de Profissionais -->
+  <ellipse cx="580" cy="480" rx="108" ry="20" class="uc-el"/>
+  <text x="580" y="474" class="uc-t">UC08 – Consultar Catálogo</text>
+  <text x="580" y="487" class="uc-t">de Profissionais</text>
+
+  <!-- ── Ator 1: Administrador / Atendente ── -->
+  <circle cx="67" cy="108" r="9" class="sfig-h"/>
+  <line x1="67" y1="117" x2="67" y2="136" class="sfig"/>
+  <line x1="52" y1="126" x2="82" y2="126" class="sfig"/>
+  <line x1="67" y1="136" x2="55" y2="153" class="sfig"/>
+  <line x1="67" y1="136" x2="79" y2="153" class="sfig"/>
+  <text x="67" y="167" class="act-t">Administrador /</text>
+  <text x="67" y="179" class="act-t">Atendente</text>
+
+  <!-- ── Ator 2: Profissional (Prestador) ── -->
+  <circle cx="67" cy="278" r="9" class="sfig-h"/>
+  <line x1="67" y1="287" x2="67" y2="306" class="sfig"/>
+  <line x1="52" y1="296" x2="82" y2="296" class="sfig"/>
+  <line x1="67" y1="306" x2="55" y2="323" class="sfig"/>
+  <line x1="67" y1="306" x2="79" y2="323" class="sfig"/>
+  <text x="67" y="337" class="act-t">Profissional</text>
+  <text x="67" y="349" class="act-t">(Prestador)</text>
+
+  <!-- ── Ator 3: Tutor / Cliente ── -->
+  <circle cx="67" cy="445" r="9" class="sfig-h"/>
+  <line x1="67" y1="454" x2="67" y2="473" class="sfig"/>
+  <line x1="52" y1="463" x2="82" y2="463" class="sfig"/>
+  <line x1="67" y1="473" x2="55" y2="490" class="sfig"/>
+  <line x1="67" y1="473" x2="79" y2="490" class="sfig"/>
+  <text x="67" y="504" class="act-t">Tutor / Cliente</text>
+
+  <!-- ── Associações: Administrador ── -->
+  <line x1="82" y1="118" x2="328" y2="76" class="assoc"/><!-- → UC01 -->
+  <line x1="82" y1="122" x2="155" y2="165" class="assoc"/><!-- → UC02 -->
+  <line x1="82" y1="124" x2="475" y2="163" class="assoc"/><!-- → UC03 -->
+  <line x1="82" y1="126" x2="155" y2="265" class="assoc"/><!-- → UC04 -->
+  <line x1="82" y1="128" x2="475" y2="263" class="assoc"/><!-- → UC05 -->
+
+  <!-- ── Associações: Profissional ── -->
+  <line x1="82" y1="282" x2="328" y2="78" class="assoc"/><!-- → UC01 -->
+  <line x1="82" y1="287" x2="155" y2="267" class="assoc"/><!-- → UC04 -->
+  <line x1="82" y1="290" x2="475" y2="266" class="assoc"/><!-- → UC05 -->
+  <line x1="82" y1="296" x2="290" y2="365" class="assoc"/><!-- → UC06 -->
+  <line x1="82" y1="305" x2="156" y2="474" class="assoc"/><!-- → UC07 -->
+  <line x1="82" y1="308" x2="472" y2="474" class="assoc"/><!-- → UC08 -->
+
+  <!-- ── Associações: Tutor / Cliente ── -->
+  <line x1="82" y1="450" x2="328" y2="81" class="assoc"/><!-- → UC01 -->
+  <line x1="82" y1="454" x2="475" y2="268" class="assoc"/><!-- → UC05 -->
+  <line x1="82" y1="460" x2="156" y2="478" class="assoc"/><!-- → UC07 -->
+  <line x1="82" y1="463" x2="472" y2="478" class="assoc"/><!-- → UC08 -->
+</svg>
+<div class="fig-caption">Figura 1 – Diagrama de casos de uso do aplicativo PetCare.</div>
+
+<!-- 1.4.2 HU -->
+<div class="h3n">1.4.2. Histórias de Usuário Por Caso de Uso</div>
+
+<!-- UC01 -->
+<div class="uc-block">
+  <div class="uc-title">UC01 &nbsp; Gerenciar Login</div>
+  <p class="uc-objetivo"><strong>Objetivo:</strong> Controlar o acesso ao sistema por meio de autenticação segura, com redirecionamento automático ao painel do perfil correspondente.</p>
+  <div class="hu-header">Histórias de Usuários</div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU01 – Logar na aplicação</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO usuário (administrador, profissional ou cliente), QUERO informar meu e-mail e senha, PARA acessar o sistema e ser redirecionado ao painel correspondente ao meu perfil.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Login válido: e-mail e senha comparados com hash bcrypt encontrados no banco.</li>
+        <li>Token JWT armazenado localmente e enviado via header <code>Authorization: Bearer</code> em todas as requisições.</li>
+        <li>Profissional → Painel do Prestador; cliente → Painel do Cliente; demais → painel administrativo.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Acesso liberado com credenciais válidas e redirecionamento correto por perfil.</li>
+        <li>Credenciais inválidas exibem mensagem de erro sem indicar qual campo falhou.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU02 – Recuperar senha</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO usuário, QUERO solicitar recuperação de senha informando meu e-mail, PARA receber um código de 6 dígitos e redefinir minha senha com segurança.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Token de 6 dígitos tem validade de 30 minutos e é marcado como usado após a redefinição.</li>
+        <li>A nova senha é armazenada com hash bcrypt.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Código válido e não expirado → senha atualizada com sucesso.</li>
+        <li>Token expirado ou já utilizado exibe mensagem de erro.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<div>
+<!-- UC02 -->
+<div class="uc-block">
+  <div class="uc-title">UC02 &nbsp; Gerenciar Clientes</div>
+  <p class="uc-objetivo"><strong>Objetivo:</strong> Manter organizada a base de tutores cadastrados com possibilidade de busca, edição e inativação.</p>
+  <div class="hu-header">Histórias de Usuários</div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU03 – Cadastrar cliente</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO atendente, QUERO cadastrar um novo cliente com nome, telefone, e-mail e observações, PARA manter a base de tutores organizada.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Nome é obrigatório. Data de cadastro é gerada automaticamente.</li>
+        <li>Cliente com agendamentos vinculados não pode ser excluído; apenas inativação é permitida.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Cliente salvo e exibido na listagem após cadastro.</li>
+        <li>Tentativa de exclusão com agendamentos retorna erro 409 com mensagem explicativa.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU04 – Buscar e filtrar clientes</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO atendente, QUERO pesquisar clientes por nome ou telefone, PARA localizar rapidamente o tutor no momento do atendimento.</div>
+    <div class="hu-row"><span class="hu-row-label">Regras de Negócio:</span> Busca deve ser case-insensitive.</div>
+    <div class="hu-row"><span class="hu-row-label">Critérios de Aceite:</span> Lista filtrada exibida em tempo real conforme o usuário digita.</div>
+  </div>
+</div>
+
+<!-- UC03 -->
+<div class="uc-block">
+  <div class="uc-title">UC03 &nbsp; Gerenciar Profissionais</div>
+  <p class="uc-objetivo"><strong>Objetivo:</strong> Manter os profissionais organizados para compor corretamente os agendamentos e serviços oferecidos.</p>
+  <div class="hu-header">Histórias de Usuários</div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU05 – Cadastrar profissional</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO administrador, QUERO cadastrar profissionais com nome, especialidade, telefone e disponibilidade, PARA que possam ser vinculados a agendamentos e serviços.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Nome é obrigatório. O status padrão é "ativo".</li>
+        <li>Profissional com agendamentos vinculados não pode ser excluído.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Profissional salvo e listado após cadastro.</li>
+        <li>Exclusão bloqueada com agendamentos vinculados.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU06 – Configurar horários de atendimento</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO profissional, QUERO configurar meus horários por dia da semana com hora início, hora fim e duração de cada slot, PARA que o sistema gere automaticamente os horários disponíveis para agendamento.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Apenas um horário por dia da semana por profissional (upsert).</li>
+        <li>Hora fim deve ser posterior à hora início.</li>
+        <li>Slots são gerados dividindo o intervalo pela duração configurada.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Horários configurados aparecem como chips disponíveis na tela de agendamento.</li>
+        <li>Dia sem horário exibe mensagem "Profissional não atende nesse dia".</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<div>
+<!-- UC04 -->
+<div class="uc-block">
+  <div class="uc-title">UC04 &nbsp; Gerenciar Serviços</div>
+  <p class="uc-objetivo"><strong>Objetivo:</strong> Padronizar o cadastro dos serviços com valor, duração e profissional responsável.</p>
+  <div class="hu-header">Histórias de Usuários</div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU07 – Cadastrar serviço com valor e duração</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO profissional, QUERO cadastrar meus serviços informando descrição, valor e duração, PARA que clientes visualizem as informações completas no catálogo.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Descrição é obrigatória. Serviço vinculado automaticamente ao profissional logado.</li>
+        <li>Duração: 15, 30, 45, 60, 90, 120 ou 180 minutos.</li>
+        <li>Exclusão bloqueada se houver agendamentos vinculados.</li>
+      </ul>
+    </div>
+    <div class="hu-row"><span class="hu-row-label">Critérios de Aceite:</span> Serviço salvo e exibido no catálogo com valor e duração formatados.</div>
+  </div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU08 – Consultar catálogo de serviços (cliente)</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO cliente, QUERO ver todos os serviços disponíveis com preços e duração, PARA escolher o serviço e agendar diretamente pelo app.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Apenas serviços com status "ativo" são exibidos no catálogo.</li>
+        <li>Filtro por profissional e busca por nome disponíveis.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Cards exibem nome do serviço, preço (R$), duração (min/h) e profissional responsável.</li>
+        <li>Botão "Agendar" abre formulário pré-preenchido com serviço e profissional.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- UC05 -->
+<div class="uc-block">
+  <div class="uc-title">UC05 &nbsp; Gerenciar Agendamentos</div>
+  <p class="uc-objetivo"><strong>Objetivo:</strong> Estruturar controle eficiente de agenda com slots automáticos, prevenção de conflitos e histórico completo.</p>
+  <div class="hu-header">Histórias de Usuários</div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU09 – Criar agendamento por slots</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO cliente ou atendente, QUERO selecionar um profissional, data e um slot disponível, PARA registrar o agendamento sem risco de conflito de horário.</div>
+    <div class="hu-row">
+      <span class="hu-row-label">Regras de Negócio:</span>
+      <ul>
+        <li>Slots gerados com base nos horários de trabalho do profissional para a data selecionada.</li>
+        <li>Slots ocupados (status ≠ "cancelado") são exibidos em cinza e não selecionáveis.</li>
+        <li>Sistema bloqueia duplo agendamento no mesmo horário/profissional (HTTP 409).</li>
+        <li>Modo cliente: campo de cliente preenchido automaticamente; campo de status oculto.</li>
+        <li>Ao trocar o profissional, serviços e slots são recarregados automaticamente.</li>
+      </ul>
+    </div>
+    <div class="hu-row">
+      <span class="hu-row-label">Critérios de Aceite:</span>
+      <ul>
+        <li>Agendamento salvo e exibido na lista com status "agendado".</li>
+        <li>Tentativa de horário ocupado retorna erro 409.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU10 – Atualizar status do agendamento</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO atendente, QUERO alterar o status (agendado, confirmado, cancelado, concluído), PARA manter o histórico atualizado.</div>
+    <div class="hu-row"><span class="hu-row-label">Regras de Negócio:</span> Agendamentos cancelados liberam o slot para novos agendamentos.</div>
+    <div class="hu-row"><span class="hu-row-label">Critérios de Aceite:</span> Status atualizado refletido imediatamente na lista com cor correspondente.</div>
+  </div>
+
+  <div class="hu-item">
+    <div class="hu-row"><span class="hu-row-label">História:</span> HU11 – Consultar agenda filtrada</div>
+    <div class="hu-row"><span class="hu-row-label">Descrição:</span> COMO gestor ou profissional, QUERO consultar agendamentos filtrando por data, profissional, cliente ou status, PARA acompanhar a operação diária.</div>
+    <div class="hu-row"><span class="hu-row-label">Regras de Negócio:</span> Filtros são cumulativos e enviados como parâmetros de query para a API.</div>
+    <div class="hu-row"><span class="hu-row-label">Critérios de Aceite:</span> Lista atualizada conforme filtro selecionado.</div>
+  </div>
+</div>
+</div>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║  1.5 PROJETO TÉCNICO               ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div class="page pb">
+<div class="h2n">1.5. Projeto Técnico</div>
+
+<div class="h3n">1.5.1. Arquitetura Utilizada</div>
+<p>O PetCare adota uma arquitetura <strong>cliente-servidor em três camadas</strong>, onde a interface mobile/web (Flutter) consome uma API REST (Node.js + Express + TypeScript) que persiste os dados em um banco relacional PostgreSQL. A autenticação é realizada via tokens JWT, validados por middleware em todas as rotas protegidas da API.</p>
+
+<div class="arch-wrap">
+  <div class="arch-layer">
+    <strong>Camada de Apresentação</strong>
+    Flutter / Dart &nbsp;(Mobile + Web)<br>
+    <small>Screens → Providers → Services → Models</small>
+  </div>
+  <div class="arch-arrow">↕&nbsp; HTTP / JSON &nbsp;·&nbsp; JWT Authentication</div>
+  <div class="arch-layer">
+    <strong>Camada de Negócio / API</strong>
+    Node.js + Express + TypeScript<br>
+    <small>Routes → Auth Middleware → Pool</small>
+  </div>
+  <div class="arch-arrow">↕&nbsp; SQL (pg driver)</div>
+  <div class="arch-layer">
+    <strong>Camada de Persistência</strong>
+    PostgreSQL<br>
+    <small>Tabelas relacionais com integridade por FK</small>
+  </div>
+</div>
+<div class="fig-caption">Figura 2 – Arquitetura cliente-servidor do aplicativo PetCare.</div>
+
+<div class="h3n">1.5.2. Ferramentas e Tecnologias</div>
+<p>A tabela a seguir apresenta as tecnologias e ferramentas efetivamente utilizadas no desenvolvimento do projeto PetCare.</p>
+<table>
+  <thead>
+    <tr><th>Ferramentas e Tecnologias Utilizadas</th><th>Descrição</th><th>Versão</th><th>Objetivo</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Flutter</td><td>Framework multiplataforma mobile e web</td><td>3.x</td><td>Interface do aplicativo e navegação entre telas</td></tr>
+    <tr><td>Dart</td><td>Linguagem principal do app</td><td>3.x</td><td>Lógica, validações, estados e integrações</td></tr>
+    <tr><td>Material Design 3</td><td>Biblioteca visual nativa do Flutter</td><td>Atual</td><td>Componentes e experiência de uso</td></tr>
+    <tr><td>Node.js</td><td>Runtime JavaScript server-side</td><td>18+ LTS</td><td>Executar a API REST no servidor</td></tr>
+    <tr><td>Express</td><td>Framework web para Node.js</td><td>4.x</td><td>Rotas, middlewares e respostas HTTP</td></tr>
+    <tr><td>TypeScript</td><td>Superset tipado do JavaScript</td><td>5.x</td><td>Tipagem estática e segurança na API</td></tr>
+    <tr><td>PostgreSQL</td><td>Banco de dados relacional</td><td>15+</td><td>Persistir todos os dados do sistema</td></tr>
+    <tr><td>pg (node-postgres)</td><td>Driver PostgreSQL para Node.js</td><td>Atual</td><td>Pool de conexões e queries ao banco</td></tr>
+    <tr><td>JWT (jsonwebtoken)</td><td>Token para autenticação stateless</td><td>Atual</td><td>Autenticar e autorizar usuários na API</td></tr>
+    <tr><td>bcryptjs</td><td>Hash de senhas</td><td>Atual</td><td>Armazenar senhas com segurança</td></tr>
+    <tr><td>dotenv</td><td>Variáveis de ambiente</td><td>Atual</td><td>Isolar credenciais e configurações</td></tr>
+    <tr><td>http (Dart)</td><td>Cliente HTTP para Flutter</td><td>Atual</td><td>Chamadas REST à API a partir do app</td></tr>
+    <tr><td>shared_preferences</td><td>Armazenamento local no Flutter</td><td>Atual</td><td>Persistir token JWT e dados do usuário</td></tr>
+    <tr><td>intl (Dart)</td><td>Formatação de datas</td><td>Atual</td><td>Formatar datas no padrão dd/MM/yyyy</td></tr>
+    <tr><td>provider</td><td>Gerenciamento de estado</td><td>Atual</td><td>Estado global de autenticação (AuthProvider)</td></tr>
+    <tr><td>Git / GitHub</td><td>Controle de versão</td><td>Atual</td><td>Rastrear alterações e apoiar colaboração</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div>
+<div class="h3n">1.5.3. Modelo Lógico do Banco de Dados</div>
+<p>O modelo lógico contempla todas as entidades necessárias para a operação do sistema, refletindo os requisitos priorizados no documento.</p>
+
+<div class="db-grid">
+  <div class="db-ent">
+    <div class="db-ent-h">USUARIOS</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li>nome</li>
+      <li>email (UNIQUE)</li>
+      <li>senha (hash)</li>
+      <li>perfil</li>
+      <li>criado_em</li>
+    </ul>
+  </div>
+  <div class="db-ent">
+    <div class="db-ent-h">CLIENTES</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li>nome</li>
+      <li>telefone</li>
+      <li>email</li>
+      <li>observacoes</li>
+      <li>status</li>
+      <li>data_cadastro</li>
+      <li><span class="fk">FK id_usuario</span></li>
+    </ul>
+  </div>
+  <div class="db-ent">
+    <div class="db-ent-h">PROFISSIONAIS</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li>nome</li>
+      <li>telefone</li>
+      <li>especialidade</li>
+      <li>disponibilidade</li>
+      <li>status</li>
+      <li><span class="fk">FK id_usuario</span></li>
+    </ul>
+  </div>
+  <div class="db-ent">
+    <div class="db-ent-h">SERVICOS</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li><span class="fk">FK id_profissional</span></li>
+      <li>descricao</li>
+      <li>valor</li>
+      <li>duracao_min</li>
+      <li>observacao</li>
+      <li>status</li>
+    </ul>
+  </div>
+  <div class="db-ent">
+    <div class="db-ent-h">AGENDAMENTOS</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li><span class="fk">FK id_cliente</span></li>
+      <li><span class="fk">FK id_profissional</span></li>
+      <li><span class="fk">FK id_servico</span></li>
+      <li>data_atendimento</li>
+      <li>horario</li>
+      <li>status</li>
+      <li>observacao</li>
+      <li>criado_em</li>
+    </ul>
+  </div>
+  <div class="db-ent">
+    <div class="db-ent-h">HORARIOS_PROFISSIONAL</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li><span class="fk">FK id_profissional</span></li>
+      <li>dia_semana (0–6)</li>
+      <li>hora_inicio</li>
+      <li>hora_fim</li>
+      <li>intervalo_min</li>
+      <li>ativo</li>
+      <li style="font-size:8.5pt;color:#555;">UNIQUE(id_prof, dia_semana)</li>
+    </ul>
+  </div>
+  <div class="db-ent">
+    <div class="db-ent-h">PASSWORD_RESET_TOKENS</div>
+    <ul>
+      <li><span class="pk">PK id</span></li>
+      <li>email</li>
+      <li>token (6 dígitos)</li>
+      <li>expira_em</li>
+      <li>usado</li>
+      <li>criado_em</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:10pt;color:#555;">
+  <strong>Relacionamentos:</strong>
+  USUARIOS 1:1 CLIENTES &nbsp;·&nbsp; USUARIOS 1:1 PROFISSIONAIS &nbsp;·&nbsp;
+  CLIENTES 1:N AGENDAMENTOS &nbsp;·&nbsp; PROFISSIONAIS 1:N AGENDAMENTOS &nbsp;·&nbsp;
+  PROFISSIONAIS 1:N SERVICOS &nbsp;·&nbsp; PROFISSIONAIS 1:N HORARIOS_PROFISSIONAL &nbsp;·&nbsp;
+  SERVICOS 1:N AGENDAMENTOS
+</p>
+<div class="fig-caption">Figura 3 – Modelo lógico do banco de dados do PetCare.</div>
+</div>
+
+<!-- ╔══════════════════════════════════════╗ -->
+<!-- ║  GESTÃO DE PROJETOS                 ║ -->
+<!-- ╚══════════════════════════════════════╝ -->
+<div class="page pb">
+<div class="sec1">2. Gestão de Projetos</div>
+
+<div class="h1n">2.1. Cronograma de Codificação do Projeto</div>
+<p>O cronograma abaixo foi consolidado conforme as entregas registradas no histórico de commits do projeto.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:22%;background:#FAC090;color:#000;border:1px solid #000;">DATA</th>
+      <th style="background:#FAC090;color:#000;border:1px solid #000;">ENTREGA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>08/03/2026</td><td>Elaboração do documento inicial do projeto (DVP v1.0).</td></tr>
+    <tr><td>05/04/2026</td><td>Complementação do DVP com visão do produto, requisitos, diagramas, arquitetura e cronograma.</td></tr>
+    <tr><td>05/05/2026</td><td>Estrutura inicial do projeto criada (API + App) e organização do ambiente de desenvolvimento.</td></tr>
+    <tr><td>12/05/2026</td><td>Criação das rotas principais da API e desenvolvimento das páginas iniciais do aplicativo.</td></tr>
+    <tr><td>24/05/2026</td><td>Implementação de cadastro e recuperação de senha (registro de usuários e fluxo de recuperação).</td></tr>
+    <tr><td>31/05/2026</td><td>Correções no fluxo de cadastro e ajustes de validação no processo de registro.</td></tr>
+    <tr><td>04/06/2026</td><td>Conclusão do módulo de recuperação de senha e refinamentos de autenticação.</td></tr>
+    <tr><td>14/06/2026</td><td>Revisão final da documentação DVP, padronização do HTML para visualização no navegador e geração em PDF.</td></tr>
+  </tbody>
+</table>
+
+<div class="rodape">
+  Universidade de Passo Fundo – UPF &nbsp;·&nbsp;
+  Análise e Desenvolvimento de Sistemas &nbsp;·&nbsp;
+  Gustavo Gasparin Grando &nbsp;·&nbsp; 2026
+</div>
+</div>
+
+</body>
+</html>

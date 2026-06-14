@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/cliente.dart';
 import '../models/profissional.dart';
+import '../models/horario_profissional.dart';
 import '../models/servico.dart';
 import '../models/agendamento.dart';
 
@@ -189,13 +190,63 @@ class ApiService {
     _checkStatus(res);
   }
 
-  // ─── Serviços ──────────────────────────────────────────────────────────────
+  // ─── Horários de Profissional ──────────────────────────────────────────────
 
-  static Future<List<Servico>> getServicos() async {
+  static Future<List<HorarioProfissional>> getHorariosProfissional(
+      int id) async {
     final res = await http.get(
-      Uri.parse('$_base/servicos'),
+      Uri.parse('$_base/profissionais/$id/horarios'),
       headers: await _authHeaders(),
     );
+    _checkStatus(res);
+    final list = jsonDecode(res.body) as List;
+    return list
+        .map((e) => HorarioProfissional.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> saveHorarioProfissional(
+      int idProfissional, HorarioProfissional h) async {
+    final res = await http.post(
+      Uri.parse('$_base/profissionais/$idProfissional/horarios'),
+      headers: await _authHeaders(),
+      body: jsonEncode(h.toJson()),
+    );
+    _checkStatus(res);
+  }
+
+  static Future<void> deleteHorarioProfissional(
+      int idProfissional, int diaSemana) async {
+    final res = await http.delete(
+      Uri.parse('$_base/profissionais/$idProfissional/horarios/$diaSemana'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+  }
+
+  static Future<List<Map<String, dynamic>>> getSlotsDisponiveis(
+    int idProfissional,
+    String data, {
+    int? exceptId,
+  }) async {
+    final params = <String, String>{'data': data};
+    if (exceptId != null) params['except_id'] = exceptId.toString();
+    final uri = Uri.parse('$_base/profissionais/$idProfissional/slots')
+        .replace(queryParameters: params);
+    final res = await http.get(uri, headers: await _authHeaders());
+    _checkStatus(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return ((body['slots'] as List?) ?? []).cast<Map<String, dynamic>>();
+  }
+
+  // ─── Serviços ──────────────────────────────────────────────────────────────
+
+  static Future<List<Servico>> getServicos({int? idProfissional}) async {
+    final params = idProfissional != null
+        ? {'id_profissional': idProfissional.toString()}
+        : null;
+    final uri = Uri.parse('$_base/servicos').replace(queryParameters: params);
+    final res = await http.get(uri, headers: await _authHeaders());
     _checkStatus(res);
     final list = jsonDecode(res.body) as List;
     return list

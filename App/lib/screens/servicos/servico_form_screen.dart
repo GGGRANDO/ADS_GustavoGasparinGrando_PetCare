@@ -4,7 +4,8 @@ import '../../services/api_service.dart';
 
 class ServicoFormScreen extends StatefulWidget {
   final Servico? servico;
-  const ServicoFormScreen({super.key, this.servico});
+  final int? idProfissional;
+  const ServicoFormScreen({super.key, this.servico, this.idProfissional});
 
   @override
   State<ServicoFormScreen> createState() => _ServicoFormScreenState();
@@ -16,6 +17,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
   late final TextEditingController _valor;
   late final TextEditingController _obs;
   String _status = 'ativo';
+  int _duracaoMin = 60;
   bool _loading = false;
 
   @override
@@ -27,6 +29,7 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
         text: s?.valor != null ? s!.valor!.toStringAsFixed(2) : '');
     _obs = TextEditingController(text: s?.observacao ?? '');
     _status = s?.status ?? 'ativo';
+    _duracaoMin = s?.duracaoMin ?? 60;
   }
 
   @override
@@ -43,10 +46,12 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
     try {
       final s = Servico(
         id: widget.servico?.id,
+        idProfissional: widget.servico?.idProfissional ?? widget.idProfissional,
         descricao: _descricao.text.trim(),
         valor: _valor.text.trim().isEmpty
             ? null
             : double.tryParse(_valor.text.trim()),
+        duracaoMin: _duracaoMin,
         observacao: _obs.text.trim().isEmpty ? null : _obs.text.trim(),
         status: _status,
       );
@@ -96,6 +101,23 @@ class _ServicoFormScreenState extends State<ServicoFormScreen> {
                     labelText: 'Valor (R\$)', border: OutlineInputBorder()),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: _duracaoMin,
+                decoration: const InputDecoration(
+                    labelText: 'Duração do serviço',
+                    border: OutlineInputBorder()),
+                items: const [
+                  DropdownMenuItem(value: 15, child: Text('15 minutos')),
+                  DropdownMenuItem(value: 30, child: Text('30 minutos')),
+                  DropdownMenuItem(value: 45, child: Text('45 minutos')),
+                  DropdownMenuItem(value: 60, child: Text('60 minutos')),
+                  DropdownMenuItem(value: 90, child: Text('90 minutos')),
+                  DropdownMenuItem(value: 120, child: Text('2 horas')),
+                  DropdownMenuItem(value: 180, child: Text('3 horas')),
+                ],
+                onChanged: (v) => setState(() => _duracaoMin = v!),
               ),
               const SizedBox(height: 16),
               TextFormField(

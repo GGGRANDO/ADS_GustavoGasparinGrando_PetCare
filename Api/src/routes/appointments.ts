@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { pool } from '../db';
 import { authMiddleware, AuthRequest } from '../middlewares/auth';
+import { enviarNotificacaoAgendamento } from '../mailer';
 
 const router = Router();
 router.use(authMiddleware);
@@ -122,7 +123,39 @@ router.post('/', async (req: AuthRequest, res: Response) => {
        RETURNING *`,
       [id_cliente, id_profissional, id_servico, data_atendimento, horario, observacao || null],
     );
+
     res.status(201).json(result.rows[0]);
+
+    // Envia notificação por email ao prestador de serviço (sem bloquear a resposta)
+    try {
+      const infoResult = await pool.query(
+        `SELECT p.email AS profissional_email,
+                p.nome  AS profissional_nome,
+                c.nome  AS cliente_nome,
+                s.descricao AS servico_descricao
+         FROM profissionais p
+         JOIN clientes      c ON c.id = $2
+         JOIN servicos      s ON s.id = $3
+         WHERE p.id = $1`,
+        [id_profissional, id_cliente, id_servico],
+      );
+
+      const info = infoResult.rows[0];
+      if (info?.profissional_email) {
+        await enviarNotificacaoAgendamento({
+          profissionalEmail: info.profissional_email,
+          profissionalNome: info.profissional_nome,
+          clienteNome: info.cliente_nome,
+          servicoDescricao: info.servico_descricao,
+          dataAtendimento: data_atendimento,
+          horario,
+          observacao,
+        });
+      }
+    } catch (mailErr) {
+      // Falha no email não deve reverter o agendamento já criado
+      console.error('Erro ao enviar e-mail de notificação:', mailErr);
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro interno.' });

@@ -8,7 +8,19 @@ import '../../services/api_service.dart';
 
 class AgendamentoFormScreen extends StatefulWidget {
   final Agendamento? agendamento;
-  const AgendamentoFormScreen({super.key, this.agendamento});
+  final bool modoCliente;
+  final int? idClientePre;
+  final int? idProfissionalPre;
+  final int? idServicoPre;
+
+  const AgendamentoFormScreen({
+    super.key,
+    this.agendamento,
+    this.modoCliente = false,
+    this.idClientePre,
+    this.idProfissionalPre,
+    this.idServicoPre,
+  });
 
   @override
   State<AgendamentoFormScreen> createState() => _AgendamentoFormScreenState();
@@ -25,7 +37,9 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   int? _idProfissional;
   int? _idServico;
   DateTime? _data;
-  TimeOfDay? _hora;
+  String? _horaSlot;
+  List<Map<String, dynamic>> _slots = [];
+  bool _loadingSlots = false;
   String _status = 'agendado';
   final _obsCtrl = TextEditingController();
   bool _loading = false;
@@ -42,12 +56,21 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       _idServico = a.idServico;
       _data = DateTime.tryParse(a.dataAtendimento);
       final parts = a.horario.split(':');
-      _hora = TimeOfDay(
-        hour: int.parse(parts[0]),
-        minute: int.parse(parts[1]),
-      );
+      _horaSlot = '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
       _status = a.status;
       _obsCtrl.text = a.observacao ?? '';
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadSlots());
+    } else {
+      // Pre-fill from client-mode params
+      _idCliente = widget.idClientePre;
+      _idProfissional = widget.idProfissionalPre;
+      _idServico = widget.idServicoPre;
+      if (_idProfissional != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _loadServicos(_idProfissional!);
+          _loadSlots();
+        });
+      }
     }
   }
 
@@ -64,6 +87,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         _servicos = (results[2] as List).cast<Servico>();
         _loadingData = false;
       });
+      // If editing, also load the scoped services for that professional
+      if (_idProfissional != null) {
+        _loadServicos(_idProfissional!);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,6 +98,23 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         );
         setState(() => _loadingData = false);
       }
+    }
+  }
+
+  Future<void> _loadServicos(int idProfissional) async {
+    try {
+      final scoped =
+          await ApiService.getServicos(idProfissional: idProfissional);
+      final all = scoped.isNotEmpty ? scoped : await ApiService.getServicos();
+      setState(() {
+        _servicos = all;
+        // Reset selected service if it is not in the new list
+        if (_idServico != null && !_servicos.any((s) => s.id == _idServico)) {
+          _idServico = null;
+        }
+      });
+    } catch (_) {
+      // silently ignore; existing list remains
     }
   }
 
@@ -87,15 +131,39 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    if (picked != null) setState(() => _data = picked);
+    if (picked != null) {
+      setState(() => _data = picked);
+      _loadSlots();
+    }
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _hora ?? TimeOfDay.now(),
-    );
-    if (picked != null) setState(() => _hora = picked);
+  Future<void> _loadSlots() async {
+    if (_idProfissional == null || _data == null) return;
+    final prevSlot = _horaSlot;
+    setState(() => _loadingSlots = true);
+    try {
+      final dataStr = DateFormat('yyyy-MM-dd').format(_data!);
+      final slots = await ApiService.getSlotsDisponiveis(
+        _idProfissional!,
+        dataStr,
+        exceptId: widget.agendamento?.id,
+      );
+      setState(() {
+        _slots = slots;
+        _loadingSlots = false;
+        _horaSlot =
+            (prevSlot != null && slots.any((s) => s['horario'] == prevSlot))
+                ? prevSlot
+                : null;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+        setState(() => _loadingSlots = false);
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -105,7 +173,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           .showSnackBar(const SnackBar(content: Text('Selecione a data.')));
       return;
     }
-    if (_hora == null) {
+    if (_horaSlot == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Selecione o horário.')));
       return;
@@ -114,8 +182,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
     setState(() => _loading = true);
     try {
       final dataStr = DateFormat('yyyy-MM-dd').format(_data!);
-      final horaStr =
-          '${_hora!.hour.toString().padLeft(2, '0')}:${_hora!.minute.toString().padLeft(2, '0')}';
+      final horaStr = _horaSlot!;
 
       final a = Agendamento(
         id: widget.agendamento?.id,
@@ -162,19 +229,23 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    DropdownButtonFormField<int>(
-                      value: _idCliente,
-                      decoration: const InputDecoration(
-                          labelText: 'Cliente *', border: OutlineInputBorder()),
-                      items: _clientes
-                          .map((c) => DropdownMenuItem(
-                              value: c.id, child: Text(c.nome)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _idCliente = v),
-                      validator: (v) =>
-                          v == null ? 'Selecione um cliente' : null,
-                    ),
-                    const SizedBox(height: 16),
+                    // Cliente dropdown — hidden in modoCliente
+                    if (!widget.modoCliente) ...[
+                      DropdownButtonFormField<int>(
+                        value: _idCliente,
+                        decoration: const InputDecoration(
+                            labelText: 'Cliente *',
+                            border: OutlineInputBorder()),
+                        items: _clientes
+                            .map((c) => DropdownMenuItem(
+                                value: c.id, child: Text(c.nome)))
+                            .toList(),
+                        onChanged: (v) => setState(() => _idCliente = v),
+                        validator: (v) =>
+                            v == null ? 'Selecione um cliente' : null,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     DropdownButtonFormField<int>(
                       value: _idProfissional,
                       decoration: const InputDecoration(
@@ -184,7 +255,16 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                           .map((p) => DropdownMenuItem(
                               value: p.id, child: Text(p.nome)))
                           .toList(),
-                      onChanged: (v) => setState(() => _idProfissional = v),
+                      onChanged: (v) {
+                        setState(() {
+                          _idProfissional = v;
+                          _horaSlot = null;
+                          _slots = [];
+                          _idServico = null;
+                        });
+                        if (v != null) _loadServicos(v);
+                        _loadSlots();
+                      },
                       validator: (v) =>
                           v == null ? 'Selecione um profissional' : null,
                     ),
@@ -195,7 +275,10 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                           labelText: 'Serviço *', border: OutlineInputBorder()),
                       items: _servicos
                           .map((s) => DropdownMenuItem(
-                              value: s.id, child: Text(s.descricao)))
+                              value: s.id,
+                              child: Text(s.valor != null
+                                  ? '${s.descricao}  •  R\$ ${s.valor!.toStringAsFixed(2)}'
+                                  : s.descricao)))
                           .toList(),
                       onChanged: (v) => setState(() => _idServico = v),
                       validator: (v) =>
@@ -214,34 +297,79 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: _pickTime,
-                      icon: const Icon(Icons.access_time),
-                      label: Text(_hora == null
-                          ? 'Selecionar horário *'
-                          : _hora!.format(context)),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 52),
+                    if (_idProfissional == null || _data == null)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          'Selecione o profissional e a data para ver os horários disponíveis.',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      )
+                    else ...[
+                      const Align(
                         alignment: Alignment.centerLeft,
+                        child: Text('Horário *',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      if (_loadingSlots)
+                        const Center(child: CircularProgressIndicator())
+                      else if (_slots.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'Profissional não atende nesse dia.',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _slots.map((slot) {
+                            final h = slot['horario'] as String;
+                            final disp = slot['disponivel'] as bool;
+                            final sel = _horaSlot == h;
+                            return ChoiceChip(
+                              label: Text(h),
+                              selected: sel,
+                              onSelected: disp
+                                  ? (v) =>
+                                      setState(() => _horaSlot = v ? h : null)
+                                  : null,
+                              selectedColor: Colors.teal,
+                              disabledColor: Colors.grey.shade200,
+                              labelStyle: TextStyle(
+                                color: sel
+                                    ? Colors.white
+                                    : (disp ? Colors.black87 : Colors.grey),
+                                fontWeight:
+                                    sel ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _status,
-                      decoration: const InputDecoration(
-                          labelText: 'Status', border: OutlineInputBorder()),
-                      items: [
-                        'agendado',
-                        'confirmado',
-                        'cancelado',
-                        'concluido'
-                      ]
-                          .map(
-                              (s) => DropdownMenuItem(value: s, child: Text(s)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _status = v!),
-                    ),
-                    const SizedBox(height: 16),
+                    // Status dropdown — hidden in modoCliente
+                    if (!widget.modoCliente) ...[
+                      DropdownButtonFormField<String>(
+                        value: _status,
+                        decoration: const InputDecoration(
+                            labelText: 'Status', border: OutlineInputBorder()),
+                        items: [
+                          'agendado',
+                          'confirmado',
+                          'cancelado',
+                          'concluido'
+                        ]
+                            .map((s) =>
+                                DropdownMenuItem(value: s, child: Text(s)))
+                            .toList(),
+                        onChanged: (v) => setState(() => _status = v!),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     TextFormField(
                       controller: _obsCtrl,
                       decoration: const InputDecoration(

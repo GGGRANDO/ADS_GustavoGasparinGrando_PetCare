@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/profissional.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../agendamentos/agendamento_form_screen.dart';
 
 class ProfissionaisCatalogoScreen extends StatefulWidget {
   const ProfissionaisCatalogoScreen({super.key});
@@ -121,6 +124,31 @@ class _ProfissionaisCatalogoScreenState
                             ),
                             isThreeLine: p.especialidade != null &&
                                 p.disponibilidade != null,
+                            trailing: ElevatedButton.icon(
+                              onPressed: () {
+                                final auth = context.read<AuthProvider>();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AgendamentoFormScreen(
+                                      modoCliente: true,
+                                      idClientePre: auth.idVinculado,
+                                      idProfissionalPre: p.id,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.calendar_today, size: 15),
+                              label: const Text('Agendar',
+                                  style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
                           ),
                         );
                       },

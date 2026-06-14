@@ -4,36 +4,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { pool } from '../db';
-
-async function createTransporter(): Promise<{ transport: nodemailer.Transporter; isTest: boolean }> {
-  const smtpConfigured =
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS;
-
-  if (!smtpConfigured) {
-    // Sem credenciais reais: usa Ethereal (caixa de entrada de teste)
-    const testAccount = await nodemailer.createTestAccount();
-    const transport = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: { user: testAccount.user, pass: testAccount.pass },
-    });
-    return { transport, isTest: true };
-  }
-
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-  return { transport, isTest: false };
-}
+import { createTransporter } from '../mailer';
 
 const router = Router();
 

@@ -5,10 +5,25 @@ import { authMiddleware, AuthRequest } from '../middlewares/auth';
 const router = Router();
 router.use(authMiddleware);
 
-// GET /api/servicos
-router.get('/', async (_req: AuthRequest, res: Response) => {
+// GET /api/servicos?id_profissional=
+router.get('/', async (req: AuthRequest, res: Response) => {
+  const { id_profissional } = req.query as { id_profissional?: string };
   try {
-    const result = await pool.query('SELECT * FROM servicos ORDER BY descricao ASC');
+    const result = id_profissional
+      ? await pool.query(
+          `SELECT s.*, p.nome AS profissional_nome
+           FROM servicos s
+           LEFT JOIN profissionais p ON p.id = s.id_profissional
+           WHERE s.id_profissional = $1
+           ORDER BY s.descricao ASC`,
+          [id_profissional],
+        )
+      : await pool.query(
+          `SELECT s.*, p.nome AS profissional_nome
+           FROM servicos s
+           LEFT JOIN profissionais p ON p.id = s.id_profissional
+           ORDER BY s.descricao ASC`,
+        );
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -36,10 +51,12 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 
 // POST /api/servicos
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { descricao, valor, observacao } = req.body as {
+  const { descricao, valor, observacao, duracao_min, id_profissional } = req.body as {
     descricao: string;
     valor?: number;
     observacao?: string;
+    duracao_min?: number;
+    id_profissional?: number;
   };
 
   if (!descricao) {
@@ -49,10 +66,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO servicos (descricao, valor, observacao)
-       VALUES ($1, $2, $3)
+      `INSERT INTO servicos (descricao, valor, observacao, duracao_min, id_profissional)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [descricao, valor ?? null, observacao || null],
+      [descricao, valor ?? null, observacao || null, duracao_min ?? 60, id_profissional ?? null],
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -63,23 +80,25 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 
 // PUT /api/servicos/:id
 router.put('/:id', async (req: AuthRequest, res: Response) => {
-  const { descricao, valor, observacao, status } = req.body as {
+  const { descricao, valor, observacao, status, duracao_min } = req.body as {
     descricao?: string;
     valor?: number;
     observacao?: string;
     status?: string;
+    duracao_min?: number;
   };
 
   try {
     const result = await pool.query(
       `UPDATE servicos
-       SET descricao  = COALESCE($1, descricao),
-           valor      = COALESCE($2, valor),
-           observacao = COALESCE($3, observacao),
-           status     = COALESCE($4, status)
-       WHERE id = $5
+       SET descricao   = COALESCE($1, descricao),
+           valor       = COALESCE($2, valor),
+           observacao  = COALESCE($3, observacao),
+           status      = COALESCE($4, status),
+           duracao_min = COALESCE($5, duracao_min)
+       WHERE id = $6
        RETURNING *`,
-      [descricao, valor ?? null, observacao, status, req.params.id],
+      [descricao, valor ?? null, observacao, status, duracao_min ?? null, req.params.id],
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: 'Serviço não encontrado.' });

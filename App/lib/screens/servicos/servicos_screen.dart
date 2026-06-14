@@ -13,17 +13,23 @@ class ServicosScreen extends StatefulWidget {
 class _ServicosScreenState extends State<ServicosScreen> {
   List<Servico> _lista = [];
   bool _loading = true;
+  int? _idProfissional;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      _idProfissional = args['idProfissional'] as int?;
+    }
+    if (_lista.isEmpty) _load();
   }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await ApiService.getServicos();
+      final list =
+          await ApiService.getServicos(idProfissional: _idProfissional);
       setState(() => _lista = list);
     } catch (e) {
       if (mounted) {
@@ -69,7 +75,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Serviços'),
+        title: Text(_idProfissional != null ? 'Meus Serviços' : 'Serviços'),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
@@ -83,13 +89,21 @@ class _ServicosScreenState extends State<ServicosScreen> {
                       itemCount: _lista.length,
                       itemBuilder: (_, i) {
                         final s = _lista[i];
+                        final durLabel =
+                            s.duracaoMin != null ? '${s.duracaoMin} min' : null;
                         return ListTile(
                           leading: const CircleAvatar(
                               child: Icon(Icons.miscellaneous_services)),
                           title: Text(s.descricao),
-                          subtitle: s.valor != null
-                              ? Text('R\$ ${s.valor!.toStringAsFixed(2)}')
-                              : null,
+                          subtitle: Row(
+                            children: [
+                              if (s.valor != null)
+                                Text('R\$ ${s.valor!.toStringAsFixed(2)}'),
+                              if (s.valor != null && durLabel != null)
+                                const Text('  •  '),
+                              if (durLabel != null) Text(durLabel),
+                            ],
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -107,8 +121,9 @@ class _ServicosScreenState extends State<ServicosScreen> {
                                   await Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (_) =>
-                                            ServicoFormScreen(servico: s)),
+                                        builder: (_) => ServicoFormScreen(
+                                            servico: s,
+                                            idProfissional: _idProfissional)),
                                   );
                                   _load();
                                 },
@@ -130,7 +145,9 @@ class _ServicosScreenState extends State<ServicosScreen> {
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ServicoFormScreen()),
+            MaterialPageRoute(
+                builder: (_) =>
+                    ServicoFormScreen(idProfissional: _idProfissional)),
           );
           _load();
         },

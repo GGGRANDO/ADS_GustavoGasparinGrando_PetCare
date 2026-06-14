@@ -62,11 +62,31 @@ async function setup() {
         criado_em  TIMESTAMP    DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS horarios_profissional (
+        id              SERIAL PRIMARY KEY,
+        id_profissional INTEGER  NOT NULL REFERENCES profissionais(id) ON DELETE CASCADE,
+        dia_semana      SMALLINT NOT NULL CHECK (dia_semana BETWEEN 0 AND 6),
+        hora_inicio     TIME     NOT NULL,
+        hora_fim        TIME     NOT NULL,
+        intervalo_min   SMALLINT NOT NULL DEFAULT 60,
+        ativo           BOOLEAN  DEFAULT TRUE,
+        UNIQUE (id_profissional, dia_semana)
+      );
+
+      ALTER TABLE servicos
+        ADD COLUMN IF NOT EXISTS duracao_min   SMALLINT DEFAULT 60;
+
+      ALTER TABLE servicos
+        ADD COLUMN IF NOT EXISTS id_profissional INTEGER REFERENCES profissionais(id);
+
       ALTER TABLE clientes
         ADD COLUMN IF NOT EXISTS id_usuario INTEGER REFERENCES usuarios(id);
 
       ALTER TABLE profissionais
         ADD COLUMN IF NOT EXISTS id_usuario INTEGER REFERENCES usuarios(id);
+
+      ALTER TABLE profissionais
+        ADD COLUMN IF NOT EXISTS email VARCHAR(255);
     `);
     console.log('Tabelas criadas com sucesso.');
   } finally {

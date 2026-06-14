@@ -11,6 +11,9 @@ import 'screens/profissionais/profissionais_screen.dart';
 import 'screens/servicos/servicos_screen.dart';
 import 'screens/profissionais/profissionais_catalogo_screen.dart';
 import 'screens/agendamentos/agendamentos_screen.dart';
+import 'screens/prestador/prestador_dashboard_screen.dart';
+import 'screens/cliente/cliente_dashboard_screen.dart';
+import 'screens/servicos/catalogo_servicos_screen.dart';
 
 void main() {
   runApp(
@@ -44,6 +47,9 @@ class PetCareApp extends StatelessWidget {
         '/servicos': (_) => const ServicosScreen(),
         '/agendamentos': (_) => const AgendamentosScreen(),
         '/profissionais-catalogo': (_) => const ProfissionaisCatalogoScreen(),
+        '/prestador-dashboard': (_) => const PrestadorDashboardScreen(),
+        '/cliente-dashboard': (_) => const ClienteDashboardScreen(),
+        '/servicos-catalogo': (_) => const CatalogoServicosScreen(),
       },
       // Redirect to /home if already logged in
       onGenerateRoute: (settings) {
@@ -63,6 +69,12 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     if (auth.isLoggedIn) {
+      if (auth.perfil == 'profissional') {
+        return const PrestadorDashboardScreen();
+      }
+      if (auth.perfil == 'cliente') {
+        return const ClienteDashboardScreen();
+      }
       return const HomeScreen();
     }
     return const LoginScreen();
