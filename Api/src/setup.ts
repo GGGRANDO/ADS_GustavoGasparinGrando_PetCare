@@ -87,6 +87,25 @@ async function setup() {
 
       ALTER TABLE profissionais
         ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+
+      ALTER TABLE clientes
+        ADD COLUMN IF NOT EXISTS cpf_cnpj VARCHAR(20);
+
+      CREATE TABLE IF NOT EXISTS pagamentos (
+        id                   SERIAL PRIMARY KEY,
+        id_agendamento       INTEGER NOT NULL REFERENCES agendamentos(id) ON DELETE CASCADE,
+        asaas_customer_id    VARCHAR(100),
+        asaas_payment_id     VARCHAR(100) UNIQUE,
+        valor                NUMERIC(10,2) NOT NULL,
+        forma_pagamento      VARCHAR(30)  NOT NULL DEFAULT 'PIX',
+        status               VARCHAR(50)  NOT NULL DEFAULT 'PENDING',
+        pix_copia_cola       TEXT,
+        pix_expiracao        TIMESTAMP,
+        link_boleto          TEXT,
+        link_fatura          TEXT,
+        criado_em            TIMESTAMP DEFAULT NOW(),
+        atualizado_em        TIMESTAMP DEFAULT NOW()
+      );
     `);
     console.log('Tabelas criadas com sucesso.');
   } finally {

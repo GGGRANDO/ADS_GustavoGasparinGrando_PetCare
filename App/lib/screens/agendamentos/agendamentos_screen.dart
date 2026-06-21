@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/agendamento.dart';
 import '../../services/api_service.dart';
 import 'agendamento_form_screen.dart';
+import '../pagamento/pagamento_screen.dart';
 
 class AgendamentosScreen extends StatefulWidget {
   const AgendamentosScreen({super.key});
@@ -205,6 +206,13 @@ class _AgendamentosScreenState extends State<AgendamentosScreen> {
                                         ).then((_) => _load());
                                       } else if (v == '_delete') {
                                         _delete(a);
+                                      } else if (v == '_pagamento') {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => PagamentoScreen(
+                                                  agendamento: a)),
+                                        );
                                       } else {
                                         _updateStatus(a, v);
                                       }
@@ -219,6 +227,16 @@ class _AgendamentosScreenState extends State<AgendamentosScreen> {
                                       const PopupMenuItem(
                                           value: 'cancelado',
                                           child: Text('Cancelar')),
+                                      const PopupMenuDivider(),
+                                      const PopupMenuItem(
+                                          value: '_pagamento',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.payment, size: 18),
+                                              SizedBox(width: 8),
+                                              Text('Pagamento'),
+                                            ],
+                                          )),
                                       const PopupMenuDivider(),
                                       const PopupMenuItem(
                                           value: '_edit',

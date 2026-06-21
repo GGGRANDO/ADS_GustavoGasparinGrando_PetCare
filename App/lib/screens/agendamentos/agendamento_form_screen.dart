@@ -5,6 +5,7 @@ import '../../models/cliente.dart';
 import '../../models/profissional.dart';
 import '../../models/servico.dart';
 import '../../services/api_service.dart';
+import '../pagamento/pagamento_screen.dart';
 
 class AgendamentoFormScreen extends StatefulWidget {
   final Agendamento? agendamento;
@@ -196,11 +197,40 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       );
 
       if (a.id == null) {
-        await ApiService.createAgendamento(a);
+        final criado = await ApiService.createAgendamento(a);
+        if (mounted) {
+          // Perguntar se quer pagar agora
+          final pagar = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Agendamento criado!'),
+              content: const Text('Deseja efetuar o pagamento agora?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Depois'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Pagar agora'),
+                ),
+              ],
+            ),
+          );
+          if (mounted) Navigator.pop(context);
+          if (pagar == true && mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PagamentoScreen(agendamento: criado),
+              ),
+            );
+          }
+        }
       } else {
         await ApiService.updateAgendamento(a);
+        if (mounted) Navigator.pop(context);
       }
-      if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

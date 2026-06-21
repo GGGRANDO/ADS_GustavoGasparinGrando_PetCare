@@ -8,6 +8,7 @@ import '../models/profissional.dart';
 import '../models/horario_profissional.dart';
 import '../models/servico.dart';
 import '../models/agendamento.dart';
+import '../models/pagamento.dart';
 
 class ApiService {
   // kIsWeb → browser uses localhost; Android emulator uses 10.0.2.2
@@ -330,6 +331,52 @@ class ApiService {
   static Future<void> deleteAgendamento(int id) async {
     final res = await http.delete(
       Uri.parse('$_base/agendamentos/$id'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+  }
+
+  // ─── Pagamentos (Asaas) ────────────────────────────────────────────────────
+
+  static Future<Pagamento> criarPagamento(
+      int idAgendamento, String formaPagamento) async {
+    final res = await http.post(
+      Uri.parse('$_base/pagamentos'),
+      headers: await _authHeaders(),
+      body: jsonEncode({
+        'id_agendamento': idAgendamento,
+        'forma_pagamento': formaPagamento,
+      }),
+    );
+    _checkStatus(res);
+    return Pagamento.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<List<Pagamento>> getPagamentosAgendamento(
+      int idAgendamento) async {
+    final res = await http.get(
+      Uri.parse('$_base/pagamentos/agendamento/$idAgendamento'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    final list = jsonDecode(res.body) as List;
+    return list
+        .map((e) => Pagamento.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<Pagamento> getPagamento(int id) async {
+    final res = await http.get(
+      Uri.parse('$_base/pagamentos/$id'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    return Pagamento.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<void> cancelarPagamento(int id) async {
+    final res = await http.delete(
+      Uri.parse('$_base/pagamentos/$id'),
       headers: await _authHeaders(),
     );
     _checkStatus(res);
