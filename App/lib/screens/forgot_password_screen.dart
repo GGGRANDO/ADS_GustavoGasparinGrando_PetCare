@@ -94,8 +94,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Redefinir senha'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -113,7 +111,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lock_reset, size: 56, color: Colors.teal),
+          const Icon(Icons.lock_reset, size: 56, color: Color(0xFF4A90A4)),
           const SizedBox(height: 16),
           Text(
             'Esqueceu sua senha?',
@@ -149,10 +147,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             height: 48,
             child: ElevatedButton(
               onPressed: _loading ? null : _sendCode,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
               child: _loading
                   ? const SizedBox(
                       height: 24,
@@ -176,7 +170,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.mark_email_read_outlined,
-              size: 56, color: Colors.teal),
+              size: 56, color: Color(0xFF4A90A4)),
           const SizedBox(height: 16),
           Text(
             'Código enviado!',
@@ -253,10 +247,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             height: 48,
             child: ElevatedButton(
               onPressed: _loading ? null : _resetPassword,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
               child: _loading
                   ? const SizedBox(
                       height: 24,

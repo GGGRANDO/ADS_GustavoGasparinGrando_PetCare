@@ -75,6 +75,14 @@ class _CatalogoServicosScreenState extends State<CatalogoServicosScreen> {
 
   void _agendar(Servico s) {
     final auth = context.read<AuthProvider>();
+    if (auth.idVinculado == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Não foi possível identificar seu cadastro. Faça login novamente.')),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -94,8 +102,6 @@ class _CatalogoServicosScreenState extends State<CatalogoServicosScreen> {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text('Serviços Disponíveis'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
         actions: [
           if (_profissionais.isNotEmpty)
             PopupMenuButton<String?>(

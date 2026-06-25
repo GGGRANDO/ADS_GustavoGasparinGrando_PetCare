@@ -5,7 +5,6 @@ import '../../models/cliente.dart';
 import '../../models/profissional.dart';
 import '../../models/servico.dart';
 import '../../services/api_service.dart';
-import '../pagamento/pagamento_screen.dart';
 
 class AgendamentoFormScreen extends StatefulWidget {
   final Agendamento? agendamento;
@@ -41,7 +40,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
   String? _horaSlot;
   List<Map<String, dynamic>> _slots = [];
   bool _loadingSlots = false;
-  String _status = 'agendado';
+  String _status = 'aguardando_confirmacao';
   final _obsCtrl = TextEditingController();
   bool _loading = false;
   bool _loadingData = true;
@@ -148,6 +147,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
         _idProfissional!,
         dataStr,
         exceptId: widget.agendamento?.id,
+        idServico: _idServico,
       );
       setState(() {
         _slots = slots;
@@ -179,6 +179,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
           .showSnackBar(const SnackBar(content: Text('Selecione o horário.')));
       return;
     }
+    if (widget.modoCliente && _idCliente == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Não foi possível identificar seu cadastro. Faça login novamente.')),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
     try {
@@ -197,36 +205,8 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
       );
 
       if (a.id == null) {
-        final criado = await ApiService.createAgendamento(a);
-        if (mounted) {
-          // Perguntar se quer pagar agora
-          final pagar = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('Agendamento criado!'),
-              content: const Text('Deseja efetuar o pagamento agora?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Depois'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Pagar agora'),
-                ),
-              ],
-            ),
-          );
-          if (mounted) Navigator.pop(context);
-          if (pagar == true && mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PagamentoScreen(agendamento: criado),
-              ),
-            );
-          }
-        }
+        await ApiService.createAgendamento(a);
+        if (mounted) Navigator.pop(context);
       } else {
         await ApiService.updateAgendamento(a);
         if (mounted) Navigator.pop(context);
@@ -248,8 +228,6 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Editar Agendamento' : 'Novo Agendamento'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
       ),
       body: _loadingData
           ? const Center(child: CircularProgressIndicator())
@@ -310,7 +288,14 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                                   ? '${s.descricao}  •  R\$ ${s.valor!.toStringAsFixed(2)}'
                                   : s.descricao)))
                           .toList(),
-                      onChanged: (v) => setState(() => _idServico = v),
+                      onChanged: (v) {
+                        setState(() {
+                          _idServico = v;
+                          _horaSlot = null;
+                          _slots = [];
+                        });
+                        _loadSlots();
+                      },
                       validator: (v) =>
                           v == null ? 'Selecione um serviço' : null,
                     ),
@@ -367,7 +352,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                                   ? (v) =>
                                       setState(() => _horaSlot = v ? h : null)
                                   : null,
-                              selectedColor: Colors.teal,
+                              selectedColor: const Color(0xFF4A90A4),
                               disabledColor: Colors.grey.shade200,
                               labelStyle: TextStyle(
                                 color: sel
@@ -388,7 +373,7 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                         decoration: const InputDecoration(
                             labelText: 'Status', border: OutlineInputBorder()),
                         items: [
-                          'agendado',
+                          'aguardando_confirmacao',
                           'confirmado',
                           'cancelado',
                           'concluido'
@@ -413,10 +398,6 @@ class _AgendamentoFormScreenState extends State<AgendamentoFormScreen> {
                       height: 48,
                       child: ElevatedButton(
                         onPressed: _loading ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
-                        ),
                         child: _loading
                             ? const SizedBox(
                                 height: 24,

@@ -16,8 +16,6 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('PetCare'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -82,41 +80,42 @@ class HomeScreen extends StatelessWidget {
     }
 
     if (perfil == 'profissional') {
-      return [
-        _MenuCard(
-          icon: Icons.dashboard_customize,
-          label: 'Meu Painel',
-          route: '/prestador-dashboard',
-          color: Colors.orange,
-        ),
-      ];
+      // Prestador é redirecionado diretamente para PrestadorDashboardScreen
+      // pelo _AuthGate — este bloco não é atingido em condições normais.
+      return [];
     }
 
     // admin / atendente — todos os módulos
     return const [
       _MenuCard(
-        icon: Icons.people,
+        icon: Icons.people_alt,
         label: 'Clientes',
         route: '/clientes',
-        color: Colors.blue,
+        color: Color(0xFF4A90A4),
       ),
       _MenuCard(
-        icon: Icons.badge,
+        icon: Icons.content_cut,
         label: 'Profissionais',
         route: '/profissionais',
-        color: Colors.orange,
+        color: Color(0xFF5BA08A),
       ),
       _MenuCard(
-        icon: Icons.miscellaneous_services,
+        icon: Icons.medical_services_outlined,
         label: 'Serviços',
         route: '/servicos',
-        color: Colors.purple,
+        color: Color(0xFF7B6FAB),
       ),
       _MenuCard(
-        icon: Icons.calendar_month,
+        icon: Icons.event_available,
         label: 'Agendamentos',
         route: '/agendamentos',
-        color: Colors.teal,
+        color: Color(0xFFF5A623),
+      ),
+      _MenuCard(
+        icon: Icons.category_outlined,
+        label: 'Categorias',
+        route: '/categorias',
+        color: Color(0xFF4A90A4),
       ),
     ];
   }

@@ -52,7 +52,7 @@ async function upsertAsaasCustomer(idCliente: number): Promise<string> {
 router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   const { id_agendamento, forma_pagamento = 'PIX' } = req.body as {
     id_agendamento: number;
-    forma_pagamento?: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
+    forma_pagamento?: 'PIX' | 'BOLETO' | 'CREDIT_CARD' | 'DINHEIRO' | 'TRANSFERENCIA';
   };
 
   if (!id_agendamento) {
@@ -60,9 +60,9 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  const formasValidas = ['PIX', 'BOLETO', 'CREDIT_CARD'];
+  const formasValidas = ['PIX', 'BOLETO', 'CREDIT_CARD', 'DINHEIRO', 'TRANSFERENCIA'];
   if (!formasValidas.includes(forma_pagamento)) {
-    res.status(400).json({ error: 'forma_pagamento inválida. Use PIX, BOLETO ou CREDIT_CARD.' });
+    res.status(400).json({ error: 'forma_pagamento inválida. Use PIX, BOLETO, CREDIT_CARD, DINHEIRO ou TRANSFERENCIA.' });
     return;
   }
 
@@ -82,6 +82,14 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     }
 
     const appt = apptRes.rows[0];
+
+    // Appointment must be confirmed before payment
+    if (appt.status !== 'confirmado') {
+      res.status(422).json({
+        error: 'O agendamento precisa ser confirmado pelo profissional antes de gerar a cobrança.',
+      });
+      return;
+    }
 
     if (!appt.valor || Number(appt.valor) <= 0) {
       res.status(422).json({ error: 'O serviço não possui valor definido para cobrança.' });
@@ -105,7 +113,19 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
     // Find or create Asaas customer
     const customerId = await upsertAsaasCustomer(appt.id_cliente);
 
-    // Build Asaas payment payload
+    // ── Pagamento manual (sem Asaas) ───────────────────────────────────────
+    if (forma_pagamento === 'DINHEIRO' || forma_pagamento === 'TRANSFERENCIA') {
+      const insertRes = await pool.query(
+        `INSERT INTO pagamentos
+           (id_agendamento, asaas_customer_id, valor, forma_pagamento, status)
+         VALUES ($1,$2,$3,$4,'RECEIVED_IN_CASH')
+         RETURNING *`,
+        [id_agendamento, customerId, appt.valor, forma_pagamento],
+      );
+      res.status(201).json(insertRes.rows[0]);
+      return;
+    }
+
     const dueDate = new Date(appt.data_atendimento);
     dueDate.setDate(dueDate.getDate() + 1); // due the day of appointment
     const dueDateStr = dueDate.toISOString().split('T')[0];

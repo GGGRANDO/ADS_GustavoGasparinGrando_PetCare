@@ -76,8 +76,6 @@ class _ServicosScreenState extends State<ServicosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_idProfissional != null ? 'Meus Serviços' : 'Serviços'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -91,17 +89,37 @@ class _ServicosScreenState extends State<ServicosScreen> {
                         final s = _lista[i];
                         final durLabel =
                             s.duracaoMin != null ? '${s.duracaoMin} min' : null;
+                        final valorLabel = s.valor != null
+                            ? 'R\$ ${s.valor!.toStringAsFixed(2)}'
+                            : null;
                         return ListTile(
                           leading: const CircleAvatar(
                               child: Icon(Icons.miscellaneous_services)),
                           title: Text(s.descricao),
-                          subtitle: Row(
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (s.valor != null)
-                                Text('R\$ ${s.valor!.toStringAsFixed(2)}'),
-                              if (s.valor != null && durLabel != null)
-                                const Text('  •  '),
-                              if (durLabel != null) Text(durLabel),
+                              if (s.categoriaNome != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Chip(
+                                    label: Text(s.categoriaNome!,
+                                        style: const TextStyle(fontSize: 11)),
+                                    backgroundColor: const Color(0xFF7B6FAB)
+                                        .withOpacity(0.15),
+                                    padding: EdgeInsets.zero,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                              Row(
+                                children: [
+                                  if (valorLabel != null) Text(valorLabel),
+                                  if (valorLabel != null && durLabel != null)
+                                    const Text('  •  '),
+                                  if (durLabel != null) Text(durLabel),
+                                ],
+                              ),
                             ],
                           ),
                           trailing: Row(
@@ -115,8 +133,7 @@ class _ServicosScreenState extends State<ServicosScreen> {
                                     : Colors.grey.shade200,
                               ),
                               IconButton(
-                                icon: const Icon(Icons.edit,
-                                    color: Colors.purple),
+                                icon: const Icon(Icons.edit),
                                 onPressed: () async {
                                   await Navigator.push(
                                     context,
@@ -139,20 +156,20 @@ class _ServicosScreenState extends State<ServicosScreen> {
                       },
                     ),
             ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (_) =>
-                    ServicoFormScreen(idProfissional: _idProfissional)),
-          );
-          _load();
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _idProfissional == null
+          ? null
+          : FloatingActionButton(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          ServicoFormScreen(idProfissional: _idProfissional)),
+                );
+                _load();
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }

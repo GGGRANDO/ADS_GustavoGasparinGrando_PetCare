@@ -28,7 +28,14 @@ class _LoginScreenState extends State<LoginScreen> {
     final ok = await auth.login(_emailCtrl.text.trim(), _senhaCtrl.text);
     if (!mounted) return;
     if (ok) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      final perfil = auth.perfil;
+      if (perfil == 'profissional') {
+        Navigator.of(context).pushReplacementNamed('/prestador-dashboard');
+      } else if (perfil == 'cliente') {
+        Navigator.of(context).pushReplacementNamed('/cliente-dashboard');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -94,10 +101,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: loading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                    ),
                     child: loading
                         ? const SizedBox(
                             height: 24,

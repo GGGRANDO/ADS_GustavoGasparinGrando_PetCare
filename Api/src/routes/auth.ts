@@ -109,11 +109,30 @@ router.post('/login', async (req: Request, res: Response) => {
     // Busca id vinculado na tabela clientes ou profissionais
     let idVinculado: number | null = null;
     if (usuario.perfil === 'cliente') {
-      const r = await pool.query('SELECT id FROM clientes WHERE id_usuario = $1', [usuario.id]);
-      if (r.rows.length > 0) idVinculado = r.rows[0].id;
+      let r = await pool.query('SELECT id FROM clientes WHERE id_usuario = $1', [usuario.id]);
+      if (r.rows.length > 0) {
+        idVinculado = r.rows[0].id;
+      } else {
+        // Fallback: cliente cadastrado pelo admin sem id_usuario — vincula pelo e-mail
+        r = await pool.query('SELECT id FROM clientes WHERE email = $1 ORDER BY id LIMIT 1', [usuario.email]);
+        if (r.rows.length > 0) {
+          idVinculado = r.rows[0].id;
+          // Atualiza o vínculo para os próximos logins
+          await pool.query('UPDATE clientes SET id_usuario = $1 WHERE id = $2', [usuario.id, idVinculado]);
+        }
+      }
     } else if (usuario.perfil === 'profissional') {
-      const r = await pool.query('SELECT id FROM profissionais WHERE id_usuario = $1', [usuario.id]);
-      if (r.rows.length > 0) idVinculado = r.rows[0].id;
+      let r = await pool.query('SELECT id FROM profissionais WHERE id_usuario = $1', [usuario.id]);
+      if (r.rows.length > 0) {
+        idVinculado = r.rows[0].id;
+      } else {
+        // Fallback: profissional sem id_usuario — vincula pelo e-mail
+        r = await pool.query('SELECT id FROM profissionais WHERE email = $1 ORDER BY id LIMIT 1', [usuario.email]);
+        if (r.rows.length > 0) {
+          idVinculado = r.rows[0].id;
+          await pool.query('UPDATE profissionais SET id_usuario = $1 WHERE id = $2', [usuario.id, idVinculado]);
+        }
+      }
     }
 
     res.json({

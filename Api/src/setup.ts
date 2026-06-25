@@ -91,6 +91,20 @@ async function setup() {
       ALTER TABLE clientes
         ADD COLUMN IF NOT EXISTS cpf_cnpj VARCHAR(20);
 
+      ALTER TABLE agendamentos
+        ADD COLUMN IF NOT EXISTS motivo_cancelamento TEXT;
+
+      CREATE TABLE IF NOT EXISTS categorias_servico (
+        id        SERIAL PRIMARY KEY,
+        nome      VARCHAR(255) NOT NULL UNIQUE,
+        descricao TEXT,
+        status    VARCHAR(20) DEFAULT 'ativo',
+        criado_em TIMESTAMP DEFAULT NOW()
+      );
+
+      ALTER TABLE servicos
+        ADD COLUMN IF NOT EXISTS id_categoria INTEGER REFERENCES categorias_servico(id);
+
       CREATE TABLE IF NOT EXISTS pagamentos (
         id                   SERIAL PRIMARY KEY,
         id_agendamento       INTEGER NOT NULL REFERENCES agendamentos(id) ON DELETE CASCADE,

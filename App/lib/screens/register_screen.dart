@@ -76,8 +76,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Criar conta'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pushReplacementNamed('/login'),
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -87,12 +89,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.pets, size: 56, color: Colors.teal),
+                const Icon(Icons.pets, size: 56, color: Color(0xFF4A90A4)),
                 const SizedBox(height: 8),
                 Text(
                   'PetCare',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.teal, fontWeight: FontWeight.bold),
+                      color: const Color(0xFF4A90A4),
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 28),
                 TextFormField(
@@ -168,8 +171,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               value: 'cliente',
                               groupValue: _tipoConta,
                               onChanged: (v) => setState(() => _tipoConta = v!),
-                              title: const Text('Cliente'),
-                              secondary: const Icon(Icons.person_outline),
+                              title: const Text('Cliente',
+                                  overflow: TextOverflow.ellipsis),
+                              secondary: const Icon(Icons.pets, size: 20),
                               contentPadding: EdgeInsets.zero,
                               dense: true,
                             ),
@@ -179,8 +183,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               value: 'profissional',
                               groupValue: _tipoConta,
                               onChanged: (v) => setState(() => _tipoConta = v!),
-                              title: const Text('Prestador'),
-                              secondary: const Icon(Icons.work_outline),
+                              title: const Text('Prestador',
+                                  overflow: TextOverflow.ellipsis, maxLines: 1),
+                              secondary:
+                                  const Icon(Icons.content_cut, size: 20),
                               contentPadding: EdgeInsets.zero,
                               dense: true,
                             ),
@@ -239,10 +245,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                    ),
                     child: _loading
                         ? const SizedBox(
                             height: 24,

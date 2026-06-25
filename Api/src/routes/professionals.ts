@@ -18,6 +18,45 @@ router.get('/', async (_req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/profissionais/meu-perfil  — perfil do profissional autenticado (usa JWT)
+router.get('/meu-perfil', async (req: AuthRequest, res: Response) => {
+  try {
+    let result = await pool.query(
+      'SELECT * FROM profissionais WHERE id_usuario = $1',
+      [req.userId],
+    );
+
+    if (result.rows.length === 0) {
+      const userResult = await pool.query(
+        'SELECT email FROM usuarios WHERE id = $1',
+        [req.userId],
+      );
+      if (userResult.rows.length > 0) {
+        const email = userResult.rows[0].email as string;
+        result = await pool.query(
+          'SELECT * FROM profissionais WHERE email = $1 ORDER BY id LIMIT 1',
+          [email],
+        );
+        if (result.rows.length > 0) {
+          await pool.query(
+            'UPDATE profissionais SET id_usuario = $1 WHERE id = $2',
+            [req.userId, result.rows[0].id],
+          );
+        }
+      }
+    }
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Perfil de profissional não encontrado.' });
+      return;
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
 // GET /api/profissionais/:id
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
@@ -190,9 +229,13 @@ router.delete('/:id/horarios/:dia', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/profissionais/:id/slots?data=YYYY-MM-DD[&except_id=<agendamento_id>]
+// GET /api/profissionais/:id/slots?data=YYYY-MM-DD[&id_servico=<id>][&except_id=<agendamento_id>]
 router.get('/:id/slots', async (req: AuthRequest, res: Response) => {
-  const { data, except_id } = req.query as { data?: string; except_id?: string };
+  const { data, except_id, id_servico } = req.query as {
+    data?: string;
+    except_id?: string;
+    id_servico?: string;
+  };
 
   if (!data) {
     res.status(400).json({ error: 'Parâmetro "data" é obrigatório.' });
@@ -226,7 +269,18 @@ router.get('/:id/slots', async (req: AuthRequest, res: Response) => {
       intervalo_min: number;
     };
 
-    // Gera os slots de horário
+    // Duração do serviço solicitado (fallback = intervalo do profissional)
+    let servicoDuracao = intervalo_min;
+    if (id_servico) {
+      const svcRes = await pool.query(
+        `SELECT COALESCE(duracao_min, $2) AS duracao_min FROM servicos WHERE id = $1`,
+        [id_servico, intervalo_min],
+      );
+      if (svcRes.rows.length > 0) {
+        servicoDuracao = svcRes.rows[0].duracao_min as number;
+      }
+    }
+
     const toMinutes = (t: string) => {
       const [h, m] = t.split(':').map(Number);
       return h * 60 + m;
@@ -237,34 +291,53 @@ router.get('/:id/slots', async (req: AuthRequest, res: Response) => {
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
+    const startMin = toMinutes(hora_inicio);
+    const endMin = toMinutes(hora_fim);
+
+    // Gera os slots de horário (baseado no intervalo do profissional)
     const slots: string[] = [];
-    let cur = toMinutes(hora_inicio);
-    const end = toMinutes(hora_fim);
-    while (cur < end) {
+    let cur = startMin;
+    while (cur + servicoDuracao <= endMin) {
       slots.push(toTime(cur));
       cur += intervalo_min;
     }
 
-    // Busca horários já ocupados (excluindo o agendamento corrente ao editar)
+    // Busca agendamentos existentes com suas durações (para cálculo de sobreposição)
     const bookedValues: unknown[] = [req.params.id, data];
     let bookedQuery = `
-      SELECT SUBSTRING(horario::text, 1, 5) AS horario
-      FROM agendamentos
-      WHERE id_profissional = $1
-        AND data_atendimento = $2
-        AND status NOT IN ('cancelado')`;
+      SELECT
+        SUBSTRING(a.horario::text, 1, 5) AS horario,
+        COALESCE(s.duracao_min, 60) AS duracao_min
+      FROM agendamentos a
+      JOIN servicos s ON s.id = a.id_servico
+      WHERE a.id_profissional = $1
+        AND a.data_atendimento = $2
+        AND a.status NOT IN ('cancelado')`;
 
     if (except_id) {
       bookedValues.push(except_id);
-      bookedQuery += ` AND id <> $${bookedValues.length}`;
+      bookedQuery += ` AND a.id <> $${bookedValues.length}`;
     }
 
     const bookedResult = await pool.query(bookedQuery, bookedValues);
-    const booked = new Set(
-      bookedResult.rows.map((r: { horario: string }) => r.horario),
-    );
 
-    const available = slots.map((s) => ({ horario: s, disponivel: !booked.has(s) }));
+    // Monta lista de intervalos ocupados: [start_min, end_min)
+    const occupiedIntervals = bookedResult.rows.map((r: { horario: string; duracao_min: number }) => ({
+      start: toMinutes(r.horario),
+      end: toMinutes(r.horario) + r.duracao_min,
+    }));
+
+    // Um slot está disponível se o intervalo [slot, slot+servicoDuracao) NÃO se sobrepõe
+    // a nenhum intervalo ocupado
+    const available = slots.map((s) => {
+      const slotStart = toMinutes(s);
+      const slotEnd = slotStart + servicoDuracao;
+      const bloqueado = occupiedIntervals.some(
+        (occ) => slotStart < occ.end && slotEnd > occ.start,
+      );
+      return { horario: s, disponivel: !bloqueado };
+    });
+
     res.json({ slots: available });
   } catch (err) {
     console.error(err);

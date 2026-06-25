@@ -9,6 +9,7 @@ import '../models/horario_profissional.dart';
 import '../models/servico.dart';
 import '../models/agendamento.dart';
 import '../models/pagamento.dart';
+import '../models/categoria_servico.dart';
 
 class ApiService {
   // kIsWeb → browser uses localhost; Android emulator uses 10.0.2.2
@@ -121,6 +122,24 @@ class ApiService {
         .toList();
   }
 
+  static Future<Cliente> getCliente(int id) async {
+    final res = await http.get(
+      Uri.parse('$_base/clientes/$id'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    return Cliente.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<Cliente> getMeuPerfil() async {
+    final res = await http.get(
+      Uri.parse('$_base/clientes/meu-perfil'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    return Cliente.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
   static Future<Cliente> createCliente(Cliente c) async {
     final res = await http.post(
       Uri.parse('$_base/clientes'),
@@ -161,6 +180,15 @@ class ApiService {
     return list
         .map((e) => Profissional.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  static Future<Profissional> getMeuPerfilProfissional() async {
+    final res = await http.get(
+      Uri.parse('$_base/profissionais/meu-perfil'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    return Profissional.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
   static Future<Profissional> createProfissional(Profissional p) async {
@@ -229,9 +257,11 @@ class ApiService {
     int idProfissional,
     String data, {
     int? exceptId,
+    int? idServico,
   }) async {
     final params = <String, String>{'data': data};
     if (exceptId != null) params['except_id'] = exceptId.toString();
+    if (idServico != null) params['id_servico'] = idServico.toString();
     final uri = Uri.parse('$_base/profissionais/$idProfissional/slots')
         .replace(queryParameters: params);
     final res = await http.get(uri, headers: await _authHeaders());
@@ -336,6 +366,26 @@ class ApiService {
     _checkStatus(res);
   }
 
+  static Future<Agendamento> confirmarAgendamento(int id) async {
+    final res = await http.patch(
+      Uri.parse('$_base/agendamentos/$id/confirmar'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    return Agendamento.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<Agendamento> recusarAgendamento(int id,
+      {String? motivo}) async {
+    final res = await http.patch(
+      Uri.parse('$_base/agendamentos/$id/cancelar'),
+      headers: await _authHeaders(),
+      body: jsonEncode({'motivo': motivo}),
+    );
+    _checkStatus(res);
+    return Agendamento.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
   // ─── Pagamentos (Asaas) ────────────────────────────────────────────────────
 
   static Future<Pagamento> criarPagamento(
@@ -350,6 +400,12 @@ class ApiService {
     );
     _checkStatus(res);
     return Pagamento.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  /// Registra pagamento manual (dinheiro ou transferência) sem passar pelo Asaas.
+  static Future<Pagamento> registrarPagamentoManual(
+      int idAgendamento, String formaPagamento) async {
+    return criarPagamento(idAgendamento, formaPagamento);
   }
 
   static Future<List<Pagamento>> getPagamentosAgendamento(
@@ -377,6 +433,50 @@ class ApiService {
   static Future<void> cancelarPagamento(int id) async {
     final res = await http.delete(
       Uri.parse('$_base/pagamentos/$id'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+  }
+
+  // ─── Categorias de serviço ────────────────────────────────────────────────
+
+  static Future<List<CategoriaServico>> getCategorias() async {
+    final res = await http.get(
+      Uri.parse('$_base/categorias'),
+      headers: await _authHeaders(),
+    );
+    _checkStatus(res);
+    final list = jsonDecode(res.body) as List;
+    return list
+        .map((e) => CategoriaServico.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<CategoriaServico> createCategoria(CategoriaServico c) async {
+    final res = await http.post(
+      Uri.parse('$_base/categorias'),
+      headers: await _authHeaders(),
+      body: jsonEncode(c.toJson()),
+    );
+    _checkStatus(res);
+    return CategoriaServico.fromJson(
+        jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<CategoriaServico> updateCategoria(CategoriaServico c) async {
+    final res = await http.put(
+      Uri.parse('$_base/categorias/${c.id}'),
+      headers: await _authHeaders(),
+      body: jsonEncode(c.toJson()),
+    );
+    _checkStatus(res);
+    return CategoriaServico.fromJson(
+        jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  static Future<void> deleteCategoria(int id) async {
+    final res = await http.delete(
+      Uri.parse('$_base/categorias/$id'),
       headers: await _authHeaders(),
     );
     _checkStatus(res);

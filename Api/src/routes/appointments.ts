@@ -1,7 +1,12 @@
 import { Router, Response } from 'express';
 import { pool } from '../db';
 import { authMiddleware, AuthRequest } from '../middlewares/auth';
-import { enviarNotificacaoAgendamento } from '../mailer';
+import {
+  enviarNotificacaoAgendamento,
+  enviarConfirmacaoParaCliente,
+  enviarCancelamentoParaCliente,
+  enviarCancelamentoParaPrestador,
+} from '../mailer';
 
 const router = Router();
 router.use(authMiddleware);
@@ -99,27 +104,48 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    // Verifica conflito de horário para o mesmo profissional
+    // Busca duração do serviço solicitado
+    const svcResult = await pool.query(
+      `SELECT COALESCE(duracao_min, 60) AS duracao_min FROM servicos WHERE id = $1`,
+      [id_servico],
+    );
+    if (svcResult.rows.length === 0) {
+      res.status(404).json({ error: 'Serviço não encontrado.' });
+      return;
+    }
+    const novaDuracao = svcResult.rows[0].duracao_min as number;
+
+    // Verifica conflito de sobreposição para o mesmo profissional
+    // Um slot conflita se o intervalo [horario, horario+duracao) se sobrepõe
+    // com qualquer agendamento existente [h_existente, h_existente+duracao_existente)
     const conflict = await pool.query(
-      `SELECT id FROM agendamentos
-       WHERE id_profissional = $1
-         AND data_atendimento = $2
-         AND horario = $3
-         AND status NOT IN ('cancelado')`,
-      [id_profissional, data_atendimento, horario],
+      `SELECT a.id
+       FROM agendamentos a
+       JOIN servicos s ON s.id = a.id_servico
+       WHERE a.id_profissional = $1
+         AND a.data_atendimento = $2
+         AND a.status NOT IN ('cancelado')
+         AND (
+           -- novo início cai dentro do intervalo existente
+           $3::time < (a.horario + COALESCE(s.duracao_min,60) * interval '1 minute')
+           AND
+           -- fim novo cai depois do início existente
+           (a.horario) < ($3::time + $4 * interval '1 minute')
+         )`,
+      [id_profissional, data_atendimento, horario, novaDuracao],
     );
 
     if (conflict.rows.length > 0) {
       res.status(409).json({
-        error: 'Profissional já possui agendamento nesse horário.',
+        error: 'Conflito de horário: o profissional já possui um atendimento nesse período.',
       });
       return;
     }
 
     const result = await pool.query(
       `INSERT INTO agendamentos
-         (id_cliente, id_profissional, id_servico, data_atendimento, horario, observacao)
-       VALUES ($1, $2, $3, $4, $5, $6)
+         (id_cliente, id_profissional, id_servico, data_atendimento, horario, observacao, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'aguardando_confirmacao')
        RETURNING *`,
       [id_cliente, id_profissional, id_servico, data_atendimento, horario, observacao || null],
     );
@@ -129,11 +155,12 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     // Envia notificação por email ao prestador de serviço (sem bloquear a resposta)
     try {
       const infoResult = await pool.query(
-        `SELECT p.email AS profissional_email,
+        `SELECT COALESCE(p.email, u.email) AS profissional_email,
                 p.nome  AS profissional_nome,
                 c.nome  AS cliente_nome,
                 s.descricao AS servico_descricao
          FROM profissionais p
+         LEFT JOIN usuarios u ON u.id = p.id_usuario
          JOIN clientes      c ON c.id = $2
          JOIN servicos      s ON s.id = $3
          WHERE p.id = $1`,
@@ -176,20 +203,36 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     };
 
   try {
-    // If changing time/professional, check conflict excluding current record
-    if ((data_atendimento || horario) && id_profissional) {
+    // If changing time/professional/service, check overlap conflict excluding current record
+    if (data_atendimento && horario && id_profissional) {
+      const svcId = id_servico ?? (
+        await pool.query(`SELECT id_servico FROM agendamentos WHERE id = $1`, [req.params.id])
+      ).rows[0]?.id_servico;
+
+      const svcResult = await pool.query(
+        `SELECT COALESCE(duracao_min, 60) AS duracao_min FROM servicos WHERE id = $1`,
+        [svcId],
+      );
+      const novaDuracao = (svcResult.rows[0]?.duracao_min as number) ?? 60;
+
       const conflict = await pool.query(
-        `SELECT id FROM agendamentos
-         WHERE id_profissional = $1
-           AND data_atendimento = $2
-           AND horario = $3
-           AND status NOT IN ('cancelado')
-           AND id <> $4`,
-        [id_profissional, data_atendimento, horario, req.params.id],
+        `SELECT a.id
+         FROM agendamentos a
+         JOIN servicos s ON s.id = a.id_servico
+         WHERE a.id_profissional = $1
+           AND a.data_atendimento = $2
+           AND a.status NOT IN ('cancelado')
+           AND a.id <> $5
+           AND (
+             $3::time < (a.horario + COALESCE(s.duracao_min,60) * interval '1 minute')
+             AND
+             (a.horario) < ($3::time + $4 * interval '1 minute')
+           )`,
+        [id_profissional, data_atendimento, horario, novaDuracao, req.params.id],
       );
       if (conflict.rows.length > 0) {
         res.status(409).json({
-          error: 'Profissional já possui agendamento nesse horário.',
+          error: 'Conflito de horário: o profissional já possui um atendimento nesse período.',
         });
         return;
       }
@@ -213,6 +256,123 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return;
     }
     res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
+// PATCH /api/agendamentos/:id/confirmar  — profissional confirma
+router.patch('/:id/confirmar', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(
+      `UPDATE agendamentos SET status = 'confirmado' WHERE id = $1 RETURNING *`,
+      [req.params.id],
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Agendamento não encontrado.' });
+      return;
+    }
+    const ag = result.rows[0];
+    res.json(ag);
+
+    // Envia e-mail de confirmação para o cliente
+    try {
+      const infoResult = await pool.query(
+        `SELECT COALESCE(c.email, uc.email) AS cliente_email,
+                c.nome   AS cliente_nome,
+                p.nome   AS profissional_nome,
+                s.descricao AS servico_descricao
+         FROM agendamentos a
+         JOIN clientes      c  ON c.id = a.id_cliente
+         LEFT JOIN usuarios uc ON uc.id = c.id_usuario
+         JOIN profissionais p  ON p.id = a.id_profissional
+         JOIN servicos      s  ON s.id = a.id_servico
+         WHERE a.id = $1`,
+        [req.params.id],
+      );
+      const info = infoResult.rows[0];
+      if (info?.cliente_email) {
+        await enviarConfirmacaoParaCliente({
+          clienteEmail: info.cliente_email,
+          clienteNome: info.cliente_nome,
+          profissionalNome: info.profissional_nome,
+          servicoDescricao: info.servico_descricao,
+          dataAtendimento: ag.data_atendimento,
+          horario: ag.horario,
+        });
+      }
+    } catch (mailErr) {
+      console.error('Erro ao enviar e-mail de confirmação:', mailErr);
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno.' });
+  }
+});
+
+// PATCH /api/agendamentos/:id/cancelar  — cancela com motivo opcional
+router.patch('/:id/cancelar', async (req: AuthRequest, res: Response) => {
+  const { motivo } = req.body as { motivo?: string };
+
+  try {
+    const result = await pool.query(
+      `UPDATE agendamentos
+       SET status = 'cancelado', motivo_cancelamento = $1
+       WHERE id = $2
+       RETURNING *`,
+      [motivo || null, req.params.id],
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Agendamento não encontrado.' });
+      return;
+    }
+    const ag = result.rows[0];
+    res.json(ag);
+
+    // Envia e-mail de cancelamento para o cliente
+    try {
+      const infoResult = await pool.query(
+        `SELECT COALESCE(c.email, uc.email)  AS cliente_email,
+                c.nome   AS cliente_nome,
+                p.nome   AS profissional_nome,
+                COALESCE(p.email, up.email)  AS profissional_email,
+                s.descricao AS servico_descricao
+         FROM agendamentos a
+         JOIN clientes      c  ON c.id = a.id_cliente
+         LEFT JOIN usuarios uc ON uc.id = c.id_usuario
+         JOIN profissionais p  ON p.id = a.id_profissional
+         LEFT JOIN usuarios up ON up.id = p.id_usuario
+         JOIN servicos      s  ON s.id = a.id_servico
+         WHERE a.id = $1`,
+        [req.params.id],
+      );
+      const info = infoResult.rows[0];
+      if (info?.cliente_email) {
+        await enviarCancelamentoParaCliente({
+          clienteEmail: info.cliente_email,
+          clienteNome: info.cliente_nome,
+          profissionalNome: info.profissional_nome,
+          servicoDescricao: info.servico_descricao,
+          dataAtendimento: ag.data_atendimento,
+          horario: ag.horario,
+          motivo,
+        });
+      }
+      if (info?.profissional_email) {
+        await enviarCancelamentoParaPrestador({
+          profissionalEmail: info.profissional_email,
+          profissionalNome: info.profissional_nome,
+          clienteNome: info.cliente_nome,
+          servicoDescricao: info.servico_descricao,
+          dataAtendimento: ag.data_atendimento,
+          horario: ag.horario,
+          motivo,
+        });
+      }
+    } catch (mailErr) {
+      console.error('Erro ao enviar e-mail de cancelamento:', mailErr);
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro interno.' });

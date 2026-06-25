@@ -19,11 +19,19 @@ class _PagamentoScreenState extends State<PagamentoScreen> {
   bool _criando = false;
   String _formaSelecionada = 'PIX';
 
-  static const _formas = ['PIX', 'BOLETO', 'CREDIT_CARD'];
+  static const _formas = [
+    'PIX',
+    'BOLETO',
+    'CREDIT_CARD',
+    'DINHEIRO',
+    'TRANSFERENCIA'
+  ];
   static const _formasLabel = {
     'PIX': 'PIX',
     'BOLETO': 'Boleto',
     'CREDIT_CARD': 'Cartão de Crédito',
+    'DINHEIRO': 'Dinheiro',
+    'TRANSFERENCIA': 'Transferência',
   };
 
   static const _statusColors = {
@@ -313,8 +321,36 @@ class _PagamentoScreenState extends State<PagamentoScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // New charge form (only if no active payment)
-                  if (!hasActivePayment) ...[
+                  // Block payment when appointment not confirmed
+                  if (widget.agendamento.status != 'confirmado') ...[
+                    Card(
+                      color: Colors.orange.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline,
+                                color: Colors.orange),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                widget.agendamento.status ==
+                                        'aguardando_confirmacao'
+                                    ? 'Aguardando confirmação do profissional. O pagamento só pode ser gerado após a confirmação.'
+                                    : 'O agendamento precisa estar confirmado para gerar cobrança.',
+                                style: const TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // New charge form (only if no active payment AND appointment is confirmed)
+                  if (!hasActivePayment &&
+                      widget.agendamento.status == 'confirmado') ...[
                     const Text('Gerar nova cobrança',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold)),

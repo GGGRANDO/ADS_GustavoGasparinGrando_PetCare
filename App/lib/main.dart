@@ -14,6 +14,7 @@ import 'screens/agendamentos/agendamentos_screen.dart';
 import 'screens/prestador/prestador_dashboard_screen.dart';
 import 'screens/cliente/cliente_dashboard_screen.dart';
 import 'screens/servicos/catalogo_servicos_screen.dart';
+import 'screens/servicos/categorias_screen.dart';
 
 void main() {
   runApp(
@@ -33,7 +34,39 @@ class PetCareApp extends StatelessWidget {
       title: 'PetCare',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4A90A4),
+          primary: const Color(0xFF4A90A4),
+          secondary: const Color(0xFFF5A623),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF4A90A4),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFF4A90A4),
+          foregroundColor: Colors.white,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF4A90A4),
+            foregroundColor: Colors.white,
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF4A90A4),
+            foregroundColor: Colors.white,
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: const OutlineInputBorder(),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: const Color(0xFF4A90A4), width: 2),
+          ),
+          labelStyle: const TextStyle(color: Colors.black87),
+        ),
         useMaterial3: true,
       ),
       initialRoute: '/login',
@@ -50,6 +83,7 @@ class PetCareApp extends StatelessWidget {
         '/prestador-dashboard': (_) => const PrestadorDashboardScreen(),
         '/cliente-dashboard': (_) => const ClienteDashboardScreen(),
         '/servicos-catalogo': (_) => const CatalogoServicosScreen(),
+        '/categorias': (_) => const CategoriasScreen(),
       },
       // Redirect to /home if already logged in
       onGenerateRoute: (settings) {

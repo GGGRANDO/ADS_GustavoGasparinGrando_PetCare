@@ -19,12 +19,14 @@ class HorarioProfissional {
 
   factory HorarioProfissional.fromJson(Map<String, dynamic> json) =>
       HorarioProfissional(
-        id: json['id'] as int?,
-        idProfissional: json['id_profissional'] as int,
-        diaSemana: json['dia_semana'] as int,
-        horaInicio: (json['hora_inicio'] as String).substring(0, 5),
-        horaFim: (json['hora_fim'] as String).substring(0, 5),
-        intervaloMin: json['intervalo_min'] as int? ?? 60,
+        id: json['id'] == null ? null : (json['id'] as num).toInt(),
+        idProfissional: (json['id_profissional'] as num).toInt(),
+        diaSemana: (json['dia_semana'] as num).toInt(),
+        horaInicio: json['hora_inicio'].toString().substring(0, 5),
+        horaFim: json['hora_fim'].toString().substring(0, 5),
+        intervaloMin: json['intervalo_min'] == null
+            ? 60
+            : (json['intervalo_min'] as num).toInt(),
         ativo: json['ativo'] as bool? ?? true,
       );
 
